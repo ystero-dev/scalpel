@@ -6,7 +6,9 @@
 //! A packet is a collection of `Layer`s. Each `Layer` is a struct implementing the `Layer` trait
 
 mod ethernet;
+use ethernet::Ethernet;
 
+use std::cell::RefCell;
 use std::fmt::Debug;
 use std::rc::Rc;
 
@@ -35,10 +37,14 @@ struct Timestamp {
 pub struct Packet<'a> {
     data: Option<&'a [u8]>,
     meta: PacketMetadata,
+    layers: Vec<Rc<RefCell<dyn Layer<'a>>>>,
 }
 
 pub trait Layer<'a>: Debug {
-    fn from_u8<'b>(&'a mut self, bytes: &'b [u8]) -> Result<(Option<Rc<dyn Layer>>, usize), Error>;
+    fn from_u8<'b>(
+        &mut self,
+        bytes: &'b [u8],
+    ) -> Result<(Option<Rc<RefCell<dyn Layer>>>, usize), Error>;
 }
 
 #[derive(Debug, Default)]
@@ -50,19 +56,21 @@ pub struct PacketMetadata {
 }
 
 impl<'a> Packet<'a> {
-    fn from_u8(_bytes: &'a [u8], _encap: EncapType) -> Self {
-        let p = Default::default();
+    fn from_u8(bytes: &'a [u8], _encap: EncapType) -> Result<Self, Error> {
+        let p = Packet::default();
 
-        p
-    }
-}
+        let mut layer = RefCell::new(Ethernet::default());
 
-impl<'l> Layer<'l> for Packet<'l> {
-    fn from_u8<'b>(
-        &'l mut self,
-        _bytes: &'b [u8],
-    ) -> Result<(Option<Rc<dyn Layer>>, usize), Error> {
-        Ok((Some(Rc::new(ethernet::Ethernet::default())), 0))
+        loop {
+            let mut last = layer.get_mut();
+            let (l, _) = last.from_u8(&bytes[..])?;
+
+            if l.is_none() {
+                break;
+            }
+        }
+
+        Ok(p)
     }
 }
 
