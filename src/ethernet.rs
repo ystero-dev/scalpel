@@ -9,7 +9,7 @@ pub(crate) struct Ethernet {
     payload: Vec<u8>,
 }
 
-impl<'a> Layer<'a> for Ethernet {
+impl Layer for Ethernet {
     fn from_u8(&mut self, _bytes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
         Ok((None, 0))
     }

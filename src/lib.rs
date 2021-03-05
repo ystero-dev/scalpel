@@ -6,7 +6,6 @@
 //! A packet is a collection of `Layer`s. Each `Layer` is a struct implementing the `Layer` trait
 
 mod ethernet;
-use ethernet::Ethernet;
 
 use std::cell::RefCell;
 use std::fmt::Debug;
@@ -36,17 +35,17 @@ struct Timestamp {
 pub struct Packet<'a> {
     data: Option<&'a [u8]>,
     meta: PacketMetadata,
-    layers: Vec<Box<dyn Layer<'a>>>,
+    layers: Vec<Box<dyn Layer>>,
 }
 
-pub trait Layer<'a>: Debug {
+pub trait Layer: Debug {
     fn from_u8<'b>(&mut self, bytes: &'b [u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error>;
 }
 
 #[derive(Debug, Default)]
 struct FakeLayer;
 
-impl<'a> Layer<'a> for FakeLayer {
+impl<'a> Layer for FakeLayer {
     fn from_u8<'b>(&mut self, _btes: &'b [u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
         Ok((Some(Box::new(FakeLayer {})), 0))
     }
@@ -65,24 +64,25 @@ impl<'a> Packet<'a> {
 
         let eth = ethernet::Ethernet::default();
 
-        let mut layer: RefCell<Box<dyn Layer>> = RefCell::new(Box::new(eth));
+        let layer: RefCell<Box<dyn Layer>> = RefCell::new(Box::new(eth));
         let mut res: (Option<Box<dyn Layer>>, usize);
         let mut start = 0;
         loop {
-            let mut decode_layer = layer.borrow_mut();
-
-            // process it
-            res = decode_layer.from_u8(&bytes[start..])?;
+            {
+                let mut decode_layer = layer.borrow_mut();
+                res = decode_layer.from_u8(&bytes[start..])?;
+            }
 
             if res.0.is_none() {
                 let fake_boxed = Box::new(FakeLayer {});
-                let boxed = std::mem::replace(&mut *decode_layer, fake_boxed);
+                let boxed = layer.replace(fake_boxed);
 
                 p.layers.push(boxed);
                 break;
             }
+
             // if the layer exists, get it in a layer.
-            let boxed = std::mem::replace(&mut *decode_layer, res.0.unwrap());
+            let boxed = layer.replace(res.0.unwrap());
             start = res.1;
 
             // append the layer to layers.
@@ -94,8 +94,13 @@ impl<'a> Packet<'a> {
 
 #[cfg(test)]
 mod tests {
+
+    use super::*;
+
     #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    fn p_decodes() {
+        let p = Packet::from_u8("".as_bytes(), EncapType::EncapTypeEthernet);
+
+        assert!(p.is_ok(), "{:?}", p.err());
     }
 }
