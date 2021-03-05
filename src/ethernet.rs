@@ -1,6 +1,3 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use crate::Error;
 use crate::Layer;
 
@@ -13,7 +10,7 @@ pub(crate) struct Ethernet {
 }
 
 impl<'a> Layer<'a> for Ethernet {
-    fn from_u8(&mut self, _bytes: &[u8]) -> Result<(Option<Rc<RefCell<dyn Layer>>>, usize), Error> {
+    fn from_u8(&mut self, _bytes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
         Ok((None, 0))
     }
 }

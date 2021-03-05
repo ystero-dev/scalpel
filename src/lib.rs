@@ -10,7 +10,6 @@ use ethernet::Ethernet;
 
 use std::cell::RefCell;
 use std::fmt::Debug;
-use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Error;
@@ -37,16 +36,21 @@ struct Timestamp {
 pub struct Packet<'a> {
     data: Option<&'a [u8]>,
     meta: PacketMetadata,
-    layers: Vec<Rc<RefCell<dyn Layer<'a>>>>,
+    layers: Vec<Box<dyn Layer<'a>>>,
 }
 
 pub trait Layer<'a>: Debug {
-    fn from_u8<'b>(
-        &mut self,
-        bytes: &'b [u8],
-    ) -> Result<(Option<Rc<RefCell<dyn Layer>>>, usize), Error>;
+    fn from_u8<'b>(&mut self, bytes: &'b [u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error>;
 }
 
+#[derive(Debug, Default)]
+struct FakeLayer;
+
+impl<'a> Layer<'a> for FakeLayer {
+    fn from_u8<'b>(&mut self, _btes: &'b [u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
+        Ok((Some(Box::new(FakeLayer {})), 0))
+    }
+}
 #[derive(Debug, Default)]
 pub struct PacketMetadata {
     timestamp: Timestamp,
@@ -57,19 +61,33 @@ pub struct PacketMetadata {
 
 impl<'a> Packet<'a> {
     fn from_u8(bytes: &'a [u8], _encap: EncapType) -> Result<Self, Error> {
-        let p = Packet::default();
+        let mut p = Packet::default();
 
-        let mut layer = RefCell::new(Ethernet::default());
+        let eth = ethernet::Ethernet::default();
 
+        let mut layer: RefCell<Box<dyn Layer>> = RefCell::new(Box::new(eth));
+        let mut res: (Option<Box<dyn Layer>>, usize);
+        let mut start = 0;
         loop {
-            let mut last = layer.get_mut();
-            let (l, _) = last.from_u8(&bytes[..])?;
+            let mut decode_layer = layer.borrow_mut();
 
-            if l.is_none() {
+            // process it
+            res = decode_layer.from_u8(&bytes[start..])?;
+
+            if res.0.is_none() {
+                let fake_boxed = Box::new(FakeLayer {});
+                let boxed = std::mem::replace(&mut *decode_layer, fake_boxed);
+
+                p.layers.push(boxed);
                 break;
             }
-        }
+            // if the layer exists, get it in a layer.
+            let boxed = std::mem::replace(&mut *decode_layer, res.0.unwrap());
+            start = res.1;
 
+            // append the layer to layers.
+            p.layers.push(boxed);
+        }
         Ok(p)
     }
 }
