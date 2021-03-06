@@ -11,7 +11,10 @@ use std::cell::RefCell;
 use std::fmt::Debug;
 
 #[derive(Debug)]
-pub struct Error;
+pub enum Error {
+    TooShort,
+    ParseError,
+}
 
 impl std::error::Error for Error {}
 
@@ -22,7 +25,7 @@ impl std::fmt::Display for Error {
 }
 
 pub enum EncapType {
-    EncapTypeEthernet,
+    Ethernet,
 }
 
 #[derive(Debug, Default)]
@@ -98,9 +101,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn p_decodes() {
-        let p = Packet::from_u8("".as_bytes(), EncapType::EncapTypeEthernet);
+    fn from_u8_fail_too_short() {
+        let p = Packet::from_u8("".as_bytes(), EncapType::Ethernet);
 
-        assert!(p.is_ok(), "{:?}", p.err());
+        assert!(p.is_err(), "{:?}", p.err());
     }
 }
