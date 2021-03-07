@@ -23,7 +23,6 @@ pub struct Ethernet {
     src_mac: MACAddress,
     dst_mac: MACAddress,
     ethertype: EtherType,
-    payload: Vec<u8>,
 }
 
 impl Layer for Ethernet {
@@ -33,7 +32,7 @@ impl Layer for Ethernet {
         }
         self.src_mac = bytes[0..6].into();
         self.dst_mac = bytes[6..12].into();
-
-        Ok((None, 0))
+        self.ethertype = (bytes[12] as u16) << 8 | bytes[13] as u16;
+        Ok((None, 14))
     }
 }

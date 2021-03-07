@@ -42,14 +42,14 @@ pub struct Packet<'a> {
 }
 
 pub trait Layer: Debug {
-    fn from_u8<'b>(&mut self, bytes: &'b [u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error>;
+    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error>;
 }
 
 #[derive(Debug, Default)]
 struct FakeLayer;
 
 impl<'a> Layer for FakeLayer {
-    fn from_u8<'b>(&mut self, _btes: &'b [u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
+    fn from_u8<'b>(&mut self, _btes: &'_ [u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
         Ok((Some(Box::new(FakeLayer {})), 0))
     }
 }
@@ -104,6 +104,13 @@ mod tests {
     fn from_u8_fail_too_short() {
         let p = Packet::from_u8("".as_bytes(), EncapType::Ethernet);
 
-        assert!(p.is_err(), "{:?}", p.err());
+        assert!(p.is_err(), "{:?}", p.ok());
+    }
+
+    #[test]
+    fn from_u8_success_eth_hdr_size() {
+        let p = Packet::from_u8(&[0; 14], EncapType::Ethernet);
+
+        assert!(p.is_ok(), "{:?}", p.err());
     }
 }
