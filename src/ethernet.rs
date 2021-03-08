@@ -1,20 +1,10 @@
-use std::convert::From;
+//! Ethernet Layer
 
+use crate::types::MACAddress;
 use crate::Error;
 use crate::Layer;
 
 const ETH_HEADER_LEN: usize = 14_usize;
-
-#[derive(Debug, Default, Clone)]
-pub struct MACAddress([u8; 6]);
-
-impl From<&'_ [u8]> for MACAddress {
-    fn from(slice: &[u8]) -> Self {
-        let mut m = MACAddress::default();
-        m.0.copy_from_slice(slice);
-        m
-    }
-}
 
 pub type EtherType = u16;
 
