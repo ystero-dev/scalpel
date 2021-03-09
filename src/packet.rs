@@ -57,7 +57,7 @@ impl<'a> Packet<'a> {
 
             // if the layer exists, get it in a layer.
             let boxed = layer.replace(res.0.unwrap());
-            start = res.1;
+            start += res.1;
 
             // append the layer to layers.
             p.layers.push(boxed);
