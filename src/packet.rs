@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 use std::fmt::Debug;
 
-use crate::ethernet::Ethernet;
+use crate::ethernet::{self, Ethernet};
 use crate::Error;
 use crate::{FakeLayer, Layer};
 
@@ -22,6 +22,7 @@ pub struct Packet<'a> {
     data: Option<&'a [u8]>,
     meta: PacketMetadata,
     layers: Vec<Box<dyn Layer>>,
+    unprocessed: Vec<u8>,
 }
 
 #[derive(Debug, Default)]
@@ -33,6 +34,14 @@ pub struct PacketMetadata {
 }
 
 impl<'a> Packet<'a> {
+    /// Register All well-know defaults for each of the encodings
+    ///
+    /// Right now Ethernet is the only Encoding supported. When other encodings are supported, we
+    /// should call their `register_defaults` as well.
+    pub fn register_defaults() -> Result<(), Error> {
+        ethernet::register_defaults()
+    }
+
     fn from_u8(bytes: &'a [u8], _encap: EncapType) -> Result<Self, Error> {
         let mut p = Packet::default();
 
@@ -61,6 +70,10 @@ impl<'a> Packet<'a> {
 
             // append the layer to layers.
             p.layers.push(boxed);
+        }
+        if start != bytes.len() {
+            let new: Vec<_> = bytes[start..].into();
+            let old = std::mem::replace(&mut p.unprocessed, new);
         }
         Ok(p)
     }

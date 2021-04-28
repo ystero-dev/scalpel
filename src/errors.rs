@@ -1,9 +1,10 @@
 //! Error types
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
     TooShort,
     ParseError,
+    RegisterError,
 }
 
 impl std::error::Error for Error {}
