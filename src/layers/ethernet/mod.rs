@@ -28,7 +28,7 @@ pub type EtherType = u16;
 
 /// Registers well-known EtherType values
 pub fn register_defaults() -> Result<(), Error> {
-    use crate::ipv4::IPv4;
+    use super::ipv4::IPv4;
 
     register_ethertype(ETHERTYPE_IP, IPv4::creator)
 }

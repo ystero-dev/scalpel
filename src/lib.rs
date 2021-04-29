@@ -5,8 +5,7 @@
 //!
 //! A packet is a collection of `Layer`s. Each `Layer` is a struct implementing the `Layer` trait
 
-mod ethernet;
-mod ipv4;
+mod layers;
 
 mod errors;
 pub use errors::*;

@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 use std::fmt::Debug;
 
-use crate::ethernet::{self, Ethernet};
+use crate::layers::ethernet::{self, Ethernet};
 use crate::Error;
 use crate::{FakeLayer, Layer};
 
