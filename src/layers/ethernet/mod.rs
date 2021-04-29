@@ -55,6 +55,12 @@ pub struct Ethernet {
     ethertype: EtherType,
 }
 
+impl Ethernet {
+    pub fn creator() -> Box<dyn Layer> {
+        Box::new(Ethernet::default())
+    }
+}
+
 impl Layer for Ethernet {
     fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
         if bytes.len() < ETH_HEADER_LEN {
