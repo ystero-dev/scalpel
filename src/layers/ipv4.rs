@@ -5,6 +5,8 @@ use std::convert::TryInto;
 use crate::errors::Error;
 use crate::layer::Layer;
 
+pub const IPV4_BASE_HDR_LEN: usize = 20_usize;
+
 #[derive(Debug, Default, Clone)]
 pub struct IPv4 {
     version: u8,
@@ -32,7 +34,8 @@ impl Layer for IPv4 {
     fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
         self.version = bytes[0] >> 4;
         self.hdr_len = bytes[0] & 0x0f;
-        if bytes.len() < self.hdr_len.into() {
+        // Length is in 4 octets
+        if bytes.len() < (self.hdr_len * 4).into() {
             return Err(Error::ParseError);
         }
         self.tos = bytes[1];

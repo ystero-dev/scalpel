@@ -13,7 +13,7 @@ use crate::Layer;
 mod types;
 use types::ETHERTYPE_IP;
 
-const ETH_HEADER_LEN: usize = 14_usize;
+pub const ETH_HEADER_LEN: usize = 14_usize;
 
 lazy_static! {
     /// A Map maintaining EtherType -> Creator fns for Layer Creators of L3 Layers.

@@ -27,7 +27,7 @@ impl TryFrom<&'_ [u8]> for MACAddress {
 impl TryFrom<&'_ str> for MACAddress {
     type Error = CrateError;
 
-    fn try_from(str: &str) -> Result<Self, Self::Error> {
+    fn try_from(_str: &str) -> Result<Self, Self::Error> {
         Err(CrateError::ParseError)
     }
 }
