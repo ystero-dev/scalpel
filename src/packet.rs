@@ -169,7 +169,7 @@ mod tests {
         assert!(p.is_ok(), "{:?}", p.err());
 
         let p = p.unwrap();
-        assert!(p.layers.len() == 2, "{:?}", p);
+        assert!(p.layers.len() == 1, "{:?}", p);
         assert!(
             p.unprocessed.len() == (len - (ETH_HEADER_LEN + IPV4_BASE_HDR_LEN)),
             "{}:{}:{:?}",

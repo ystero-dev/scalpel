@@ -11,7 +11,7 @@ use crate::Error;
 use crate::Layer;
 
 mod types;
-use types::ETHERTYPE_IP;
+use types::{EtherType, ETHERTYPE_IP};
 
 pub const ETH_HEADER_LEN: usize = 14_usize;
 
@@ -24,13 +24,11 @@ lazy_static! {
         Mutex::new(HashMap::new());
 }
 
-pub type EtherType = u16;
-
 /// Registers well-known EtherType values
 pub fn register_defaults() -> Result<(), Error> {
     use super::ipv4::IPv4;
 
-    register_ethertype(ETHERTYPE_IP, IPv4::creator)
+    register_ethertype(ETHERTYPE_IP.clone(), IPv4::creator)
 }
 
 /// Register for a given EtherType
@@ -68,7 +66,7 @@ impl Layer for Ethernet {
         }
         self.src_mac = bytes[0..6].try_into()?;
         self.dst_mac = bytes[6..12].try_into()?;
-        self.ethertype = (bytes[12] as u16) << 8 | bytes[13] as u16;
+        self.ethertype = EtherType((bytes[12] as u16) << 8 | bytes[13] as u16);
         let map = ETHERTYPES_MAP.lock().unwrap();
         let layer = map.get(&self.ethertype);
         if layer.is_none() {
