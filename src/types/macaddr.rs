@@ -3,11 +3,12 @@
 //! A Type representing MAC Address as an array of `[u8; 6]`
 //!
 
+use core::fmt;
 use std::convert::TryFrom;
 
 use crate::errors::Error as CrateError;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Clone)]
 pub struct MACAddress([u8; 6]);
 
 impl TryFrom<&'_ [u8]> for MACAddress {
@@ -29,6 +30,22 @@ impl TryFrom<&'_ str> for MACAddress {
 
     fn try_from(_str: &str) -> Result<Self, Self::Error> {
         Err(CrateError::ParseError)
+    }
+}
+
+impl fmt::Display for MACAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
+            self.0[0], self.0[1], self.0[2], self.0[3], self.0[4], self.0[5]
+        )
+    }
+}
+
+impl fmt::Debug for MACAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self, f)
     }
 }
 

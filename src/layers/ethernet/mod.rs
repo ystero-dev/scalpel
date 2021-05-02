@@ -6,7 +6,7 @@ use std::sync::Mutex;
 
 use lazy_static::lazy_static;
 
-use crate::types::MACAddress;
+use crate::types::{LayerCreatorFn, MACAddress};
 use crate::Error;
 use crate::Layer;
 
@@ -18,9 +18,9 @@ pub const ETH_HEADER_LEN: usize = 14_usize;
 lazy_static! {
     /// A Map maintaining EtherType -> Creator fns for Layer Creators of L3 Layers.
     ///
-    /// The creator function simply creates a `default` L3 struct that implements the dissectors
+    /// The creator function simply creates a `default` L3 struct that implements the dissector
     /// for the Layer.
-    static ref ETHERTYPES_MAP: Mutex<HashMap<EtherType, fn() -> Box<dyn Layer>>> =
+    static ref ETHERTYPES_MAP: Mutex<HashMap<EtherType, LayerCreatorFn>> =
         Mutex::new(HashMap::new());
 }
 
