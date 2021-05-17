@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 use std::convert::TryInto;
-use std::sync::Mutex;
+use std::sync::RwLock;
 
 use lazy_static::lazy_static;
 
@@ -20,8 +20,8 @@ lazy_static! {
     ///
     /// The creator function simply creates a `default` L3 struct that implements the dissector
     /// for the Layer.
-    static ref ETHERTYPES_MAP: Mutex<HashMap<EtherType, LayerCreatorFn>> =
-        Mutex::new(HashMap::new());
+    static ref ETHERTYPES_MAP: RwLock<HashMap<EtherType, LayerCreatorFn>> =
+        RwLock::new(HashMap::new());
 }
 
 /// Registers well-known EtherType values
@@ -37,7 +37,7 @@ pub fn register_defaults() -> Result<(), Error> {
 /// by calling this function.
 ///
 pub fn register_ethertype(eth_type: EtherType, layer: fn() -> Box<dyn Layer>) -> Result<(), Error> {
-    let mut map = ETHERTYPES_MAP.lock().unwrap();
+    let mut map = ETHERTYPES_MAP.write().unwrap();
     if map.contains_key(&eth_type) {
         return Err(Error::RegisterError);
     }
@@ -67,7 +67,7 @@ impl Layer for Ethernet {
         self.src_mac = bytes[0..6].try_into()?;
         self.dst_mac = bytes[6..12].try_into()?;
         self.ethertype = EtherType((bytes[12] as u16) << 8 | bytes[13] as u16);
-        let map = ETHERTYPES_MAP.lock().unwrap();
+        let map = ETHERTYPES_MAP.read().unwrap();
         let layer = map.get(&self.ethertype);
         if layer.is_none() {
             return Ok((None, ETH_HEADER_LEN));

@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::sync::Mutex;
+use std::sync::RwLock;
 
 use lazy_static::lazy_static;
 
@@ -13,11 +13,8 @@ use crate::Error;
 use crate::{FakeLayer, Layer};
 
 lazy_static! {
-    // FIXME: Convert the following Mutex to RWLock? We only need to lock it when we are updating
-    // the map and not when we are inserting into map. The inserting into Map will typically be
-    // rare and usually init time activity. Is there a better way of handling this without lock?
-    static ref ENCAP_TYPES_MAP: Mutex<HashMap<EncapType, LayerCreatorFn>> =
-        Mutex::new(HashMap::new());
+    static ref ENCAP_TYPES_MAP: RwLock<HashMap<EncapType, LayerCreatorFn>> =
+        RwLock::new(HashMap::new());
 }
 
 #[derive(Debug, Default)]
@@ -60,7 +57,7 @@ impl<'a> Packet<'a> {
     ///
     /// Any 'crate' using the infrastucture, should call this function with their encoding type
     pub fn register_encap_type(encap: EncapType, creator: LayerCreatorFn) -> Result<(), Error> {
-        let mut map = ENCAP_TYPES_MAP.lock().unwrap();
+        let mut map = ENCAP_TYPES_MAP.write().unwrap();
         if map.contains_key(&ENCAP_TYPE_ETH) {
             return Err(Error::RegisterError);
         }
@@ -82,7 +79,7 @@ impl<'a> Packet<'a> {
 
         let l2: Box<dyn Layer>;
         {
-            let map = ENCAP_TYPES_MAP.lock().unwrap();
+            let map = ENCAP_TYPES_MAP.read().unwrap();
             let creator_fn = map.get(&encap);
             if creator_fn.is_none() {
                 let new: Vec<_> = bytes.into();
@@ -169,7 +166,7 @@ mod tests {
         assert!(p.is_ok(), "{:?}", p.err());
 
         let p = p.unwrap();
-        assert!(p.layers.len() == 1, "{:?}", p);
+        assert!(p.layers.len() == 2, "{:?}", p);
         assert!(
             p.unprocessed.len() == (len - (ETH_HEADER_LEN + IPV4_BASE_HDR_LEN)),
             "{}:{}:{:?}",
