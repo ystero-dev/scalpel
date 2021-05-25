@@ -3,8 +3,8 @@
 //! A Type representing MAC Address as an array of `[u8; 6]`
 //!
 
+use core::convert::TryFrom;
 use core::fmt;
-use std::convert::TryFrom;
 
 use crate::errors::Error as CrateError;
 
@@ -53,7 +53,7 @@ impl fmt::Debug for MACAddress {
 mod tests {
     use super::*;
     use crate::errors::Error as CrateError;
-    use std::convert::TryInto;
+    use core::convert::TryInto;
 
     #[test]
     fn byte_array_too_small_fail() {

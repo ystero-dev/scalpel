@@ -1,8 +1,10 @@
 //! Packet Structure
 
-use std::cell::RefCell;
+use core::cell::RefCell;
+use core::fmt::Debug;
+
+// FIXME: Should work with `no_std`
 use std::collections::HashMap;
-use std::fmt::Debug;
 use std::sync::RwLock;
 
 use lazy_static::lazy_static;
@@ -83,7 +85,7 @@ impl<'a> Packet<'a> {
             let creator_fn = map.get(&encap);
             if creator_fn.is_none() {
                 let new: Vec<_> = bytes.into();
-                let _ = std::mem::replace(&mut p.unprocessed, new);
+                let _ = core::mem::replace(&mut p.unprocessed, new);
 
                 return Ok(p);
             }
@@ -118,7 +120,7 @@ impl<'a> Packet<'a> {
         }
         if start != bytes.len() {
             let new: Vec<_> = bytes[start..].into();
-            let _ = std::mem::replace(&mut p.unprocessed, new);
+            let _ = core::mem::replace(&mut p.unprocessed, new);
         }
         Ok(p)
     }

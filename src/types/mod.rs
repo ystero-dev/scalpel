@@ -5,6 +5,9 @@ use crate::Layer;
 mod macaddr;
 pub use macaddr::*;
 
+mod ethertype;
+pub use ethertype::*;
+
 /// Creator function type
 pub type LayerCreatorFn = fn() -> Box<dyn Layer>;
 

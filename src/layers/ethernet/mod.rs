@@ -1,17 +1,16 @@
 //! Ethernet Layer
 
+use core::convert::TryInto;
+
+// FIXME: Should work with no_std
 use std::collections::HashMap;
-use std::convert::TryInto;
 use std::sync::RwLock;
 
 use lazy_static::lazy_static;
 
-use crate::types::{LayerCreatorFn, MACAddress};
+use crate::types::{EtherType, LayerCreatorFn, MACAddress, ETHERTYPE_IP};
 use crate::Error;
 use crate::Layer;
-
-mod types;
-use types::{EtherType, ETHERTYPE_IP};
 
 pub const ETH_HEADER_LEN: usize = 14_usize;
 

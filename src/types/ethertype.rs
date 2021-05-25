@@ -1,4 +1,4 @@
-///! Definitions of Well known Ethertypes
+///! EtherType structure and definition of Well Known EtherTypes
 ///
 use std::fmt;
 use std::hash::Hash;
