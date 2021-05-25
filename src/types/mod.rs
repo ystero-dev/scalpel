@@ -8,6 +8,9 @@ pub use macaddr::*;
 mod ethertype;
 pub use ethertype::*;
 
+mod ipaddr;
+pub use ipaddr::*;
+
 /// Creator function type
 pub type LayerCreatorFn = fn() -> Box<dyn Layer>;
 

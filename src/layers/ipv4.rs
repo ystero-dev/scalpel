@@ -4,6 +4,7 @@ use std::convert::TryInto;
 
 use crate::errors::Error;
 use crate::layer::Layer;
+use crate::types::IPv4Address;
 
 pub const IPV4_BASE_HDR_LEN: usize = 20_usize;
 
@@ -19,8 +20,8 @@ pub struct IPv4 {
     ttl: u8,
     proto: u8,
     checksum: u16,
-    src_addr: u32,
-    dst_addr: u32,
+    src_addr: IPv4Address,
+    dst_addr: IPv4Address,
     // FIXME: Add options
 }
 
@@ -47,8 +48,8 @@ impl Layer for IPv4 {
         self.ttl = bytes[8];
         self.proto = bytes[9];
         self.checksum = u16::from_be_bytes(bytes[10..12].try_into().unwrap());
-        self.src_addr = u32::from_be_bytes(bytes[12..16].try_into().unwrap());
-        self.dst_addr = u32::from_be_bytes(bytes[16..20].try_into().unwrap());
+        self.src_addr = bytes[12..16].try_into().unwrap();
+        self.dst_addr = bytes[16..20].try_into().unwrap();
 
         Ok((None, 20))
     }
