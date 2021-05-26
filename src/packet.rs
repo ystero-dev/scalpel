@@ -151,7 +151,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_valid_http_packet() {
+    fn parse_valid_ipv4_http_packet() {
         use crate::layers::ethernet::ETH_HEADER_LEN;
         use crate::layers::ipv4::IPV4_BASE_HDR_LEN;
 
@@ -171,6 +171,35 @@ mod tests {
         assert!(p.layers.len() == 2, "{:?}", p);
         assert!(
             p.unprocessed.len() == (len - (ETH_HEADER_LEN + IPV4_BASE_HDR_LEN)),
+            "{}:{}:{:?}",
+            len,
+            p.unprocessed.len(),
+            p
+        );
+    }
+
+    #[test]
+    fn parse_valid_ipv6_tcp_packet() {
+        use crate::layers::ethernet::ETH_HEADER_LEN;
+        use crate::layers::ipv6::IPV6_BASE_HDR_LEN;
+
+        let _ = Packet::register_default_encap_types();
+
+        let _ = Packet::register_defaults();
+
+        let array = hex::decode("000573a007d168a3c4f949f686dd600000000020064020010470e5bfdead49572174e82c48872607f8b0400c0c03000000000000001af9c7001903a088300000000080022000da4700000204058c0103030801010402");
+        assert!(array.is_ok());
+        assert!(true);
+
+        let array = array.unwrap();
+        let len = array.len();
+        let p = Packet::from_u8(&array, ENCAP_TYPE_ETH);
+        assert!(p.is_ok(), "{:?}", p.err());
+
+        let p = p.unwrap();
+        assert!(p.layers.len() == 2, "{:?}", p);
+        assert!(
+            p.unprocessed.len() == (len - (ETH_HEADER_LEN + IPV6_BASE_HDR_LEN)),
             "{}:{}:{:?}",
             len,
             p.unprocessed.len(),

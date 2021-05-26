@@ -8,7 +8,7 @@ use std::sync::RwLock;
 
 use lazy_static::lazy_static;
 
-use crate::types::{EtherType, LayerCreatorFn, MACAddress, ETHERTYPE_IP};
+use crate::types::{EtherType, LayerCreatorFn, MACAddress, ETHERTYPE_IP, ETHERTYPE_IP6};
 use crate::Error;
 use crate::Layer;
 
@@ -26,8 +26,12 @@ lazy_static! {
 /// Registers well-known EtherType values
 pub fn register_defaults() -> Result<(), Error> {
     use super::ipv4::IPv4;
+    use super::ipv6::IPv6;
 
-    register_ethertype(ETHERTYPE_IP.clone(), IPv4::creator)
+    register_ethertype(ETHERTYPE_IP.clone(), IPv4::creator)?;
+    register_ethertype(ETHERTYPE_IP6.clone(), IPv6::creator)?;
+
+    Ok(())
 }
 
 /// Register for a given EtherType

@@ -19,3 +19,4 @@ impl fmt::Debug for EtherType {
 }
 
 pub static ETHERTYPE_IP: EtherType = EtherType(0x0800_u16);
+pub static ETHERTYPE_IP6: EtherType = EtherType(0x86dd_u16);

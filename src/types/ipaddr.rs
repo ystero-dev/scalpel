@@ -55,13 +55,13 @@ impl TryFrom<&'_ [u8]> for IPv6Address {
         if slice.len() != 16 {
             Err(CrateError::ParseError)
         } else {
-            let array: [u8; 16] = slice.try_into().unwrap();
-            // FIXME: Check whether be16::from_bytes is faster than this?
-            //
-            unsafe {
-                let ip: IPv6Address = core::mem::transmute_copy(&array);
-                Ok(ip)
+            let mut ip = IPv6Address::default();
+            for i in 0..8 {
+                ip.0[i] = u16::from_be_bytes(slice[2 * i..2 * i + 2].try_into().unwrap())
+                    .try_into()
+                    .unwrap();
             }
+            Ok(ip)
         }
     }
 }

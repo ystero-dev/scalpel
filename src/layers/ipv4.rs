@@ -1,6 +1,6 @@
 //! IPv4 Layer
 
-use std::convert::TryInto;
+use core::convert::TryInto as _;
 
 use crate::errors::Error;
 use crate::layer::Layer;
@@ -51,7 +51,7 @@ impl Layer for IPv4 {
         self.src_addr = bytes[12..16].try_into().unwrap();
         self.dst_addr = bytes[16..20].try_into().unwrap();
 
-        Ok((None, 20))
+        Ok((None, IPV4_BASE_HDR_LEN))
     }
 
     fn name(&self) -> &str {
