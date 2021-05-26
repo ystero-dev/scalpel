@@ -76,7 +76,11 @@ impl<'a> Packet<'a> {
         ethernet::register_defaults()
     }
 
-    fn from_u8(bytes: &'a [u8], encap: EncapType) -> Result<Self, Error> {
+    /// Create a Packet from a u8 buffer.
+    ///
+    /// This is the main API function. An application would typically call `Packet::from_u8` and
+    /// then on the returned packet, can call other methods like format as Json etc.
+    pub fn from_u8(bytes: &'a [u8], encap: EncapType) -> Result<Self, Error> {
         let mut p = Packet::default();
 
         let l2: Box<dyn Layer>;
@@ -151,7 +155,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_valid_ipv4_http_packet() {
+    fn parse_valid_ipv4_packet() {
         use crate::layers::ethernet::ETH_HEADER_LEN;
         use crate::layers::ipv4::IPV4_BASE_HDR_LEN;
 
@@ -179,7 +183,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_valid_ipv6_tcp_packet() {
+    fn parse_valid_ipv6_packet() {
         use crate::layers::ethernet::ETH_HEADER_LEN;
         use crate::layers::ipv6::IPV6_BASE_HDR_LEN;
 
