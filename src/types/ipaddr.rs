@@ -4,6 +4,7 @@
 
 use core::convert::{TryFrom, TryInto};
 use core::fmt;
+use core::fmt::Write;
 
 use crate::errors::Error as CrateError;
 
@@ -27,7 +28,7 @@ impl TryFrom<&'_ [u8]> for IPv4Address {
 impl TryFrom<&'_ str> for IPv4Address {
     type Error = CrateError;
 
-    fn try_from(slice: &'_ str) -> Result<Self, Self::Error> {
+    fn try_from(_slice: &'_ str) -> Result<Self, Self::Error> {
         Err(CrateError::ParseError)
     }
 }
@@ -65,27 +66,184 @@ impl TryFrom<&'_ [u8]> for IPv6Address {
     }
 }
 
+impl TryFrom<&'_ [u16]> for IPv6Address {
+    type Error = CrateError;
+
+    fn try_from(slice: &'_ [u16]) -> Result<Self, Self::Error> {
+        if slice.len() != 8 {
+            Err(CrateError::ParseError)
+        } else {
+            let mut ip = IPv6Address::default();
+            ip.0.copy_from_slice(slice);
+            Ok(ip)
+        }
+    }
+}
+
 impl TryFrom<&'_ str> for IPv6Address {
     type Error = CrateError;
 
-    fn try_from(slice: &'_ str) -> Result<Self, Self::Error> {
+    fn try_from(_slice: &'_ str) -> Result<Self, Self::Error> {
         Err(CrateError::ParseError)
     }
 }
 
+// Following structures are private structures used primarily by formatter.
+#[derive(Debug)]
+struct ZeroGroup {
+    count: u8,
+}
+
+#[derive(Debug)]
+enum IPv6Segment {
+    NonZeroSegment(u16),
+    ZeroSegment(ZeroGroup),
+}
+
+#[derive(Debug, Default)]
+struct IPv6Segments([Option<IPv6Segment>; 8]);
+
 impl fmt::Display for IPv6Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // FIXME: Also implement short hand notation
-        write!(
-            f,
-            "{}:{}:{}:{}:{}:{}:{}:{}",
-            self.0[0], self.0[1], self.0[2], self.0[3], self.0[4], self.0[5], self.0[6], self.0[7]
-        )
+        let mut segments = IPv6Segments::default();
+
+        let mut in_zero_streak = true;
+        let mut zero_streak_length = 0;
+
+        // First Get the structure int Segments
+        let mut i = 0;
+        for entry in self.0.iter() {
+            if entry == &0 {
+                zero_streak_length += 1;
+                in_zero_streak = true;
+            } else {
+                if in_zero_streak {
+                    if zero_streak_length >= 1 {
+                        let _ = segments.0[i].replace(IPv6Segment::ZeroSegment(ZeroGroup {
+                            count: zero_streak_length,
+                        }));
+                        i += 1;
+                    }
+                }
+                let _ = segments.0[i].replace(IPv6Segment::NonZeroSegment(*entry));
+                i += 1;
+                in_zero_streak = false;
+                zero_streak_length = 0;
+            }
+        }
+        if in_zero_streak {
+            let _ = segments.0[i].replace(IPv6Segment::ZeroSegment(ZeroGroup {
+                count: zero_streak_length,
+            }));
+        }
+
+        // Output Segments
+        let mut w = String::new();
+        let mut long_zero_segments = 0;
+        let mut zero_streak = false;
+        for entry in segments.0.iter() {
+            match *entry {
+                Some(IPv6Segment::NonZeroSegment(ref num)) => {
+                    zero_streak = false;
+                    write!(&mut w, "{:x}", num)?;
+                    write!(&mut w, ":")?;
+                }
+                Some(IPv6Segment::ZeroSegment(ref z)) => {
+                    if z.count == 1 {
+                        let _ = write!(&mut w, "0");
+                    } else {
+                        long_zero_segments += 1;
+                        if long_zero_segments == 1 {
+                            zero_streak = true;
+                            let _ = w.pop();
+                            write!(&mut w, ":")?;
+                        } else {
+                            for _ in 0..z.count {
+                                write!(&mut w, "0:")?;
+                            }
+                            let _ = w.pop();
+                        }
+                    }
+                    write!(&mut w, ":")?;
+                }
+                None => {}
+            };
+        }
+
+        if !(long_zero_segments == 1 && zero_streak) {
+            let _ = w.pop();
+        }
+
+        write!(f, "{}", w)
     }
 }
 
 impl fmt::Debug for IPv6Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self, f)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use std::net::Ipv6Addr;
+
+    #[test]
+    fn ipv6_addr_tests() {
+        struct IPv6AddressTestCase<'s> {
+            input: &'s str,
+            valid: bool,
+        }
+
+        let test_cases = vec![
+            IPv6AddressTestCase {
+                input: "fe80::1",
+                valid: true,
+            },
+            IPv6AddressTestCase {
+                input: "::",
+                valid: true,
+            },
+            IPv6AddressTestCase {
+                input: "::1",
+                valid: true,
+            },
+            IPv6AddressTestCase {
+                input: "::ffff:0:0",
+                valid: true,
+            },
+            IPv6AddressTestCase {
+                input: "::ffff:ff:ff",
+                valid: true,
+            },
+            IPv6AddressTestCase {
+                input: "64:ff9b::",
+                valid: true,
+            },
+            IPv6AddressTestCase {
+                input: "2a03:2880:f12f:183:face:b00c:0:25de",
+                valid: true,
+            },
+            IPv6AddressTestCase {
+                input: "1:0:1:0:1:0:1:0",
+                valid: true,
+            },
+            IPv6AddressTestCase {
+                input: "2404:6800:4003:c04::1b",
+                valid: true,
+            },
+        ];
+
+        for test_case in test_cases {
+            let ipv6: Result<IPv6Address, _> =
+                test_case.input.parse::<Ipv6Addr>().unwrap().segments()[..].try_into();
+            assert!(ipv6.is_ok(), test_case.valid);
+            if test_case.valid {
+                let ipv6 = ipv6.unwrap();
+                assert_eq!(test_case.input, format!("{}", ipv6));
+            }
+        }
     }
 }
