@@ -8,6 +8,17 @@ use crate::types::IPv6Address;
 
 pub const IPV6_BASE_HDR_LEN: usize = 40_usize;
 
+/// Register ourselves to well-known Layer 2
+///
+/// Right now only Ethernet is Supported
+pub fn register_defaults() -> Result<(), Error> {
+    use crate::layers::ethernet::register_ethertype;
+
+    register_ethertype(crate::types::ETHERTYPE_IP6.clone(), IPv6::creator)?;
+
+    Ok(())
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct IPv6 {
     version: u8,

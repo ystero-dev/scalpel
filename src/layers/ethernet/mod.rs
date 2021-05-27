@@ -23,14 +23,10 @@ lazy_static! {
         RwLock::new(HashMap::new());
 }
 
-/// Registers well-known EtherType values
+/// Register our Encap Types with the Packet.
+///
+/// This function is a No-Op right now since this is the only Encap Type supported right now.
 pub fn register_defaults() -> Result<(), Error> {
-    use super::ipv4::IPv4;
-    use super::ipv6::IPv6;
-
-    register_ethertype(ETHERTYPE_IP.clone(), IPv4::creator)?;
-    register_ethertype(ETHERTYPE_IP6.clone(), IPv6::creator)?;
-
     Ok(())
 }
 

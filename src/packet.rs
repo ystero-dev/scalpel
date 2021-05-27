@@ -10,6 +10,7 @@ use std::sync::RwLock;
 use lazy_static::lazy_static;
 
 use crate::layers::ethernet::{self, Ethernet};
+use crate::layers::{ipv4, ipv6};
 use crate::types::{EncapType, LayerCreatorFn, ENCAP_TYPE_ETH};
 use crate::Error;
 use crate::{FakeLayer, Layer};
@@ -73,7 +74,11 @@ impl<'a> Packet<'a> {
     /// Right now Ethernet is the only Encoding supported. When other encodings are supported, we
     /// should call their `register_defaults` as well.
     pub fn register_defaults() -> Result<(), Error> {
-        ethernet::register_defaults()
+        ethernet::register_defaults()?;
+        ipv4::register_defaults()?;
+        ipv6::register_defaults()?;
+
+        Ok(())
     }
 
     /// Create a Packet from a u8 buffer.

@@ -8,6 +8,17 @@ use crate::types::IPv4Address;
 
 pub const IPV4_BASE_HDR_LEN: usize = 20_usize;
 
+/// Register ourselves to well-known Layer 2
+///
+/// Right now only Ethernet is Supported
+pub fn register_defaults() -> Result<(), Error> {
+    use crate::layers::ethernet::register_ethertype;
+
+    register_ethertype(crate::types::ETHERTYPE_IP.clone(), IPv4::creator)?;
+
+    Ok(())
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct IPv4 {
     version: u8,
