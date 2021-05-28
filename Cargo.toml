@@ -16,5 +16,5 @@ criterion = "0.3"
 
 
 [[bench]]
-name = "types_benchmark"
+name = "layer3_benchmark"
 harness = false
