@@ -12,3 +12,9 @@ lazy_static = "1"
 
 [dev-dependencies]
 hex = "0.4"
+criterion = "0.3"
+
+
+[[bench]]
+name = "types_benchmark"
+harness = false

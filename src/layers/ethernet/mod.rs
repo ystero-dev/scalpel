@@ -8,9 +8,9 @@ use std::sync::RwLock;
 
 use lazy_static::lazy_static;
 
-use crate::types::{EtherType, LayerCreatorFn, MACAddress, ETHERTYPE_IP, ETHERTYPE_IP6};
-use crate::Error;
-use crate::Layer;
+use crate::types::ENCAP_TYPE_ETH;
+use crate::types::{EtherType, LayerCreatorFn, MACAddress};
+use crate::{Error, Layer, Packet};
 
 pub const ETH_HEADER_LEN: usize = 14_usize;
 
@@ -21,13 +21,14 @@ lazy_static! {
     /// for the Layer.
     static ref ETHERTYPES_MAP: RwLock<HashMap<EtherType, LayerCreatorFn>> =
         RwLock::new(HashMap::new());
+
 }
 
 /// Register our Encap Types with the Packet.
 ///
 /// This function is a No-Op right now since this is the only Encap Type supported right now.
 pub fn register_defaults() -> Result<(), Error> {
-    Ok(())
+    Packet::register_encap_type(ENCAP_TYPE_ETH, Ethernet::creator)
 }
 
 /// Register for a given EtherType

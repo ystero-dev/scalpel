@@ -6,6 +6,7 @@
 //! A packet is a collection of `Layer`s. Each `Layer` is a struct implementing the `Layer` trait
 
 mod layers;
+pub use layers::register_defaults;
 
 mod errors;
 pub use errors::*;

@@ -9,8 +9,6 @@ use std::sync::RwLock;
 
 use lazy_static::lazy_static;
 
-use crate::layers::ethernet::{self, Ethernet};
-use crate::layers::{ipv4, ipv6};
 use crate::types::{EncapType, LayerCreatorFn, ENCAP_TYPE_ETH};
 use crate::Error;
 use crate::{FakeLayer, Layer};
@@ -43,19 +41,6 @@ pub struct PacketMetadata {
 }
 
 impl<'a> Packet<'a> {
-    /// Register well-known encodings
-    ///
-    /// Any 'application' using our crate, should call this functions first, to be able to dissect
-    /// the packets.
-    pub fn register_default_encap_types() -> Result<(), Error> {
-        Self::register_encap_type(ENCAP_TYPE_ETH, Ethernet::creator)?;
-
-        // For additional encodings, Add support here.
-        // FIXME: Perhaps this should be generated through `build.rs` somehow.
-
-        Ok(())
-    }
-
     /// Register a new Layer 2 encoding
     ///
     /// Any 'crate' using the infrastucture, should call this function with their encoding type
@@ -65,18 +50,6 @@ impl<'a> Packet<'a> {
             return Err(Error::RegisterError);
         }
         map.insert(encap, creator);
-
-        Ok(())
-    }
-
-    /// Register All well-know defaults for each of the encap types
-    ///
-    /// Right now Ethernet is the only Encoding supported. When other encodings are supported, we
-    /// should call their `register_defaults` as well.
-    pub fn register_defaults() -> Result<(), Error> {
-        ethernet::register_defaults()?;
-        ipv4::register_defaults()?;
-        ipv6::register_defaults()?;
 
         Ok(())
     }
@@ -143,7 +116,7 @@ mod tests {
 
     #[test]
     fn from_u8_fail_too_short() {
-        let _ = Packet::register_default_encap_types();
+        let _ = crate::layers::register_defaults();
 
         let p = Packet::from_u8("".as_bytes(), ENCAP_TYPE_ETH);
 
@@ -152,7 +125,7 @@ mod tests {
 
     #[test]
     fn from_u8_success_eth_hdr_size() {
-        let _ = Packet::register_default_encap_types();
+        let _ = crate::layers::register_defaults();
 
         let p = Packet::from_u8(&[0; 14], ENCAP_TYPE_ETH);
 
@@ -161,12 +134,11 @@ mod tests {
 
     #[test]
     fn parse_valid_ipv4_packet() {
+        use crate::layers;
         use crate::layers::ethernet::ETH_HEADER_LEN;
         use crate::layers::ipv4::IPV4_BASE_HDR_LEN;
 
-        let _ = Packet::register_default_encap_types();
-
-        let _ = Packet::register_defaults();
+        let _ = layers::register_defaults();
 
         let array = hex::decode("00e08100b02800096b88f5c90800450000c1d24940008006c85b0a000005cf2e865e0cc30050a80076877de014025018faf0ad62000048454144202f76342f69756964656e742e6361623f3033303730313132303820485454502f312e310d0a4163636570743a202a2f2a0d0a557365722d4167656e743a20496e6475737472792055706461746520436f6e74726f6c0d0a486f73743a2077696e646f77737570646174652e6d6963726f736f66742e636f6d0d0a436f6e6e656374696f6e3a204b6565702d416c6976650d0a0d0a");
         assert!(array.is_ok());
@@ -189,12 +161,11 @@ mod tests {
 
     #[test]
     fn parse_valid_ipv6_packet() {
+        use crate::layers;
         use crate::layers::ethernet::ETH_HEADER_LEN;
         use crate::layers::ipv6::IPV6_BASE_HDR_LEN;
 
-        let _ = Packet::register_default_encap_types();
-
-        let _ = Packet::register_defaults();
+        let _ = layers::register_defaults();
 
         let array = hex::decode("000573a007d168a3c4f949f686dd600000000020064020010470e5bfdead49572174e82c48872607f8b0400c0c03000000000000001af9c7001903a088300000000080022000da4700000204058c0103030801010402");
         assert!(array.is_ok());
