@@ -18,3 +18,8 @@ criterion = "0.3"
 [[bench]]
 name = "layer3_benchmark"
 harness = false
+
+
+[[bench]]
+name = "ipv6_display"
+harness = false
