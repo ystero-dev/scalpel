@@ -11,7 +11,7 @@ use lazy_static::lazy_static;
 
 use crate::types::{EncapType, LayerCreatorFn, ENCAP_TYPE_ETH};
 use crate::Error;
-use crate::{FakeLayer, Layer};
+use crate::{EmptyLayer, Layer};
 
 lazy_static! {
     static ref ENCAP_TYPES_MAP: RwLock<HashMap<EncapType, LayerCreatorFn>> =
@@ -105,8 +105,7 @@ impl<'a> Packet<'a> {
             }
 
             if res.0.is_none() {
-                let fake_boxed = Box::new(FakeLayer {});
-                let boxed = layer.replace(fake_boxed);
+                let boxed = layer.replace(Box::new(EmptyLayer {}));
 
                 p.layers.push(boxed);
                 start += res.1;
