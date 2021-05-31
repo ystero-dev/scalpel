@@ -24,6 +24,18 @@ struct Timestamp {
     nsecs: i64,
 }
 
+/// [`Packet`] is a central structure in `scalpel` containing the decoded data and some metadata.
+///
+/// When a byte-stream is 'dissected' by scalpel, it creates a `Packet` structure that contains the
+/// following information.
+///  * `data` : Optional 'data' from which this packet is constructed.
+///  * `meta` : Metadata associated with the packet. This contains information like timestamp,
+///             interface identifier where the data was captured etc. see `PacketMetadata` for
+///             details.
+///  * `layers`: A Vector of Opaque structures, each implementing the `Layer` trait. For example
+///              Each of the following is a Layer - `Ethernet`, `IPv4`, `TCP` etc.
+///  * `unprocessed`: The partof the original byte-stream that is not processed and captured into
+///                   `layers` above.
 #[derive(Debug, Default)]
 pub struct Packet<'a> {
     data: Option<&'a [u8]>,
@@ -32,18 +44,25 @@ pub struct Packet<'a> {
     unprocessed: Vec<u8>,
 }
 
+/// Metadata associated with the Packet.
 #[derive(Debug, Default)]
 pub struct PacketMetadata {
+    /// Capture timestamp
     timestamp: Timestamp,
+    /// Interface ID
     iface: i8,
+    /// Actual length on the wire
     len: u16,
+    /// Capture length
     caplen: u16,
 }
 
 impl<'a> Packet<'a> {
     /// Register a new Layer 2 encoding
     ///
-    /// Any 'crate' using the infrastucture, should call this function with their encoding type
+    /// In order to dissect bytes on wire into a [`Packet`] structure, the right encoding needs to
+    /// be registered. An internal Map of [`EncapType`] -> [`LayerCreatorFn`] is updated when a new
+    /// Layer 2 registers itself. This will cause the 'decoder' function for that layer.
     pub fn register_encap_type(encap: EncapType, creator: LayerCreatorFn) -> Result<(), Error> {
         let mut map = ENCAP_TYPES_MAP.write().unwrap();
         if map.contains_key(&ENCAP_TYPE_ETH) {
@@ -54,10 +73,11 @@ impl<'a> Packet<'a> {
         Ok(())
     }
 
-    /// Create a Packet from a u8 buffer.
+    /// Create a [`Packet`] from a u8 slice.
     ///
-    /// This is the main API function. An application would typically call `Packet::from_u8` and
-    /// then on the returned packet, can call other methods like format as Json etc.
+    /// This is the main 'decoder' function. An application would typically call `Packet::from_u8`.
+    /// This would then return a [`Packet`] structure. The application can then perform actions if
+    /// any on the returned structure.
     pub fn from_u8(bytes: &'a [u8], encap: EncapType) -> Result<Self, Error> {
         let mut p = Packet::default();
 

@@ -14,7 +14,11 @@ pub use ipaddr::*;
 /// Creator function type
 pub type LayerCreatorFn = fn() -> Box<dyn Layer>;
 
-// FIXME: At some time, let them make consistent with `libpcap`.
+/// Packet Encapsulation Type
+///
+/// This value is same as those supported by [libpcap][libpcap]
+///
+/// [libpcap]: https://www.tcpdump.org/
 pub type EncapType = u8;
 
 pub static ENCAP_TYPE_ETH: EncapType = 1_u8;
