@@ -2,7 +2,7 @@
 //!
 //! This module defines types for IPv4 and IPv6 which are simply based on the u8 arrays.
 
-use core::convert::{TryFrom, TryInto};
+use core::convert::TryFrom;
 use core::fmt;
 use core::fmt::Write;
 
@@ -57,9 +57,7 @@ impl TryFrom<&'_ [u8]> for IPv6Address {
         } else {
             let mut ip = IPv6Address::default();
             for i in 0..8 {
-                ip.0[i] = u16::from_be_bytes(slice[2 * i..2 * i + 2].try_into().unwrap())
-                    .try_into()
-                    .unwrap();
+                ip.0[i] = (slice[2 * i] as u16) << 8 | (slice[2 * i + 1] as u16);
             }
             Ok(ip)
         }
@@ -186,6 +184,8 @@ impl fmt::Debug for IPv6Address {
 
 #[cfg(test)]
 mod tests {
+
+    use core::convert::TryInto;
 
     use super::*;
     use std::net::Ipv6Addr;

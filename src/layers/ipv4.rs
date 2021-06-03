@@ -74,14 +74,14 @@ impl Layer for IPv4 {
             return Err(Error::ParseError);
         }
         self.tos = bytes[1];
-        self.len = u16::from_be_bytes(bytes[2..4].try_into().unwrap());
-        self.id = u16::from_be_bytes(bytes[4..6].try_into().unwrap());
-        let flags_offset = u16::from_be_bytes(bytes[6..8].try_into().unwrap());
+        self.len = (bytes[2] as u16) << 8 | (bytes[3] as u16);
+        self.id = (bytes[4] as u16) << 8 | (bytes[5] as u16);
+        let flags_offset = (bytes[6] as u16) << 8 | (bytes[7] as u16);
         self.flags = (flags_offset >> 13) as u8;
         self.frag_offset = flags_offset & 0xe0;
         self.ttl = bytes[8];
         self.proto = bytes[9];
-        self.checksum = u16::from_be_bytes(bytes[10..12].try_into().unwrap());
+        self.checksum = (bytes[10] as u16) << 8 | (bytes[11] as u16);
         self.src_addr = bytes[12..16].try_into().unwrap();
         self.dst_addr = bytes[16..20].try_into().unwrap();
 

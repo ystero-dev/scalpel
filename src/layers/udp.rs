@@ -1,7 +1,5 @@
 //! UDP Layer
 
-use core::convert::TryInto as _;
-
 use crate::errors::Error;
 use crate::layer::Layer;
 
@@ -40,10 +38,10 @@ impl Layer for UDP {
             return Err(Error::TooShort);
         }
 
-        self.src_port = u16::from_be_bytes(bytes[0..2].try_into().unwrap());
-        self.dst_port = u16::from_be_bytes(bytes[2..4].try_into().unwrap());
-        self.length = u16::from_be_bytes(bytes[4..6].try_into().unwrap());
-        self.checksum = u16::from_be_bytes(bytes[6..8].try_into().unwrap());
+        self.src_port = (bytes[0] as u16) << 8 | (bytes[1] as u16);
+        self.dst_port = (bytes[2] as u16) << 8 | (bytes[3] as u16);
+        self.length = (bytes[4] as u16) << 8 | (bytes[5] as u16);
+        self.checksum = (bytes[6] as u16) << 8 | (bytes[7] as u16);
 
         Ok((None, UDP_HDR_LEN))
     }
