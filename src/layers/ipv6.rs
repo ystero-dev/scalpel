@@ -2,11 +2,20 @@
 
 use core::convert::TryInto;
 
+use std::collections::HashMap;
+use std::sync::RwLock;
+
+use lazy_static::lazy_static;
+
 use crate::errors::Error;
 use crate::layer::Layer;
-use crate::types::IPv6Address;
+use crate::types::{IPv6Address, LayerCreatorFn};
 
 pub const IPV6_BASE_HDR_LEN: usize = 40_usize;
+
+lazy_static! {
+    static ref NEXT_HEADERS_MAP: RwLock<HashMap<u8, LayerCreatorFn>> = RwLock::new(HashMap::new());
+}
 
 /// Register ourselves to well-known Layer 2
 ///
@@ -15,6 +24,21 @@ pub fn register_defaults() -> Result<(), Error> {
     use crate::layers::ethernet::register_ethertype;
 
     register_ethertype(crate::types::ETHERTYPE_IP6.clone(), IPv6::creator)?;
+
+    Ok(())
+}
+
+/// Register Next Header
+///
+/// All the Protocols use this value, in addition to IPv6 Extension headers.
+pub fn register_next_header(header: u8, creator: LayerCreatorFn) -> Result<(), Error> {
+    let mut map = NEXT_HEADERS_MAP.write().unwrap();
+
+    if map.contains_key(&header) {
+        return Err(Error::RegisterError);
+    }
+
+    map.insert(header, creator);
 
     Ok(())
 }
@@ -52,7 +76,14 @@ impl Layer for IPv6 {
         self.src_addr = bytes[8..24].try_into().unwrap();
         self.dst_addr = bytes[24..40].try_into().unwrap();
 
-        Ok((None, IPV6_BASE_HDR_LEN))
+        let map = NEXT_HEADERS_MAP.read().unwrap();
+        let layer = map.get(&self.next_hdr);
+        if layer.is_none() {
+            Ok((None, IPV6_BASE_HDR_LEN))
+        } else {
+            let next_layer_creator = layer.unwrap();
+            Ok((Some(next_layer_creator()), IPV6_BASE_HDR_LEN))
+        }
     }
 
     fn name(&self) -> &str {

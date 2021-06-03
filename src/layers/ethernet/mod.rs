@@ -36,7 +36,7 @@ pub fn register_defaults() -> Result<(), Error> {
 /// A Layer that would handle subsequent decoding for a given Ethertype, should register itself
 /// by calling this function.
 ///
-pub fn register_ethertype(eth_type: EtherType, layer: fn() -> Box<dyn Layer>) -> Result<(), Error> {
+pub fn register_ethertype(eth_type: EtherType, layer: LayerCreatorFn) -> Result<(), Error> {
     let mut map = ETHERTYPES_MAP.write().unwrap();
     if map.contains_key(&eth_type) {
         return Err(Error::RegisterError);
@@ -67,6 +67,7 @@ impl Layer for Ethernet {
         self.src_mac = bytes[0..6].try_into()?;
         self.dst_mac = bytes[6..12].try_into()?;
         self.ethertype = EtherType((bytes[12] as u16) << 8 | bytes[13] as u16);
+
         let map = ETHERTYPES_MAP.read().unwrap();
         let layer = map.get(&self.ethertype);
         if layer.is_none() {

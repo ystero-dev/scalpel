@@ -2,11 +2,20 @@
 
 use core::convert::TryInto as _;
 
+use std::collections::HashMap;
+use std::sync::RwLock;
+
+use lazy_static::lazy_static;
+
 use crate::errors::Error;
 use crate::layer::Layer;
-use crate::types::IPv4Address;
+use crate::types::{IPv4Address, LayerCreatorFn};
 
 pub const IPV4_BASE_HDR_LEN: usize = 20_usize;
+
+lazy_static! {
+    static ref PROTOCOLS_MAP: RwLock<HashMap<u8, LayerCreatorFn>> = RwLock::new(HashMap::new());
+}
 
 /// Register ourselves to well-known Layer 2
 ///
@@ -15,6 +24,20 @@ pub fn register_defaults() -> Result<(), Error> {
     use crate::layers::ethernet::register_ethertype;
 
     register_ethertype(crate::types::ETHERTYPE_IP.clone(), IPv4::creator)?;
+
+    Ok(())
+}
+
+/// Register a Protocol for dissection.
+///
+/// Higher level protocols should call this function to register themselves for decoding with the
+/// IPv4 Layer.
+pub fn register_protocol(proto: u8, creator: LayerCreatorFn) -> Result<(), Error> {
+    let mut map = PROTOCOLS_MAP.write().unwrap();
+    if map.contains_key(&proto) {
+        return Err(Error::RegisterError);
+    }
+    map.insert(proto, creator);
 
     Ok(())
 }
@@ -62,7 +85,14 @@ impl Layer for IPv4 {
         self.src_addr = bytes[12..16].try_into().unwrap();
         self.dst_addr = bytes[16..20].try_into().unwrap();
 
-        Ok((None, IPV4_BASE_HDR_LEN))
+        let map = PROTOCOLS_MAP.read().unwrap();
+        let layer = map.get(&self.proto);
+        if layer.is_none() {
+            Ok((None, IPV4_BASE_HDR_LEN))
+        } else {
+            let l4_creator = layer.unwrap();
+            Ok((Some(l4_creator()), IPV4_BASE_HDR_LEN))
+        }
     }
 
     fn name(&self) -> &str {
