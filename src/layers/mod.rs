@@ -6,6 +6,8 @@ pub mod ipv6;
 
 pub mod udp;
 
+pub mod dns;
+
 /// Register Default protocol handlers.
 ///
 /// Each [`crate::layer::Layer`] in `scalpel` will be decoded by a certain field in the upper
@@ -31,6 +33,9 @@ pub fn register_defaults() -> Result<(), crate::errors::Error> {
 
     // L4+ Layers
     udp::register_defaults()?;
+
+    // App Layers
+    dns::register_defaults()?;
 
     Ok(())
 }

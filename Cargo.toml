@@ -23,3 +23,8 @@ harness = false
 [[bench]]
 name = "ipv6_display"
 harness = false
+
+[[bench]]
+name = "udp_benchmark"
+harness = false
+
