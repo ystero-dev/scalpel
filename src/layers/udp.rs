@@ -66,7 +66,10 @@ impl Layer for UDP {
         self.checksum = (bytes[6] as u16) << 8 | (bytes[7] as u16);
 
         let map = UDP_APPS_MAP.read().unwrap();
-        let app = map.get(&self.dst_port);
+        let mut app = map.get(&self.dst_port);
+        if app.is_none() {
+            app = map.get(&self.src_port);
+        }
         if app.is_none() {
             Ok((None, UDP_HDR_LEN))
         } else {

@@ -38,10 +38,10 @@ struct Timestamp {
 ///                   `layers` above.
 #[derive(Debug, Default)]
 pub struct Packet<'a> {
-    data: Option<&'a [u8]>,
-    meta: PacketMetadata,
-    layers: Vec<Box<dyn Layer>>,
-    unprocessed: Vec<u8>,
+    pub data: Option<&'a [u8]>,
+    pub meta: PacketMetadata,
+    pub layers: Vec<Box<dyn Layer>>,
+    pub unprocessed: Vec<u8>,
 }
 
 /// Metadata associated with the Packet.

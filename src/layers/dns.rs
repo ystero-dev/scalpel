@@ -5,6 +5,36 @@ use core::convert::TryInto;
 use crate::errors::Error;
 use crate::layer::Layer;
 use crate::layers::udp;
+use crate::{IPv4Address, IPv6Address};
+
+#[derive(Default, Debug, Clone)]
+pub struct DNSSOA {
+    mname: DNSName,
+    rname: DNSName,
+    serial: u32,
+    refresh: u32,
+    retry: u32,
+    expire: u32,
+    minimum: u32,
+}
+
+#[derive(Clone, Debug)]
+pub enum DNSRecordData {
+    Empty,
+    A(IPv4Address),
+    AAAA(IPv6Address),
+    CNAME(DNSName),
+    MB(DNSName),
+    MD(DNSName),
+    MF(DNSName),
+    MG(DNSName),
+    MINFO((DNSName, DNSName)),
+    MR(DNSName),
+    MX((u16, DNSName)),
+    PTR(DNSName),
+    NULL(Vec<u8>),
+    SOA(DNSSOA),
+}
 
 /// Register ourselves with parent
 pub fn register_defaults() -> Result<(), Error> {
@@ -12,7 +42,7 @@ pub fn register_defaults() -> Result<(), Error> {
 }
 
 #[derive(Debug, Default, Clone)]
-struct DNSName(Vec<u8>);
+pub struct DNSName(Vec<u8>);
 
 #[derive(Debug, Default, Clone)]
 pub struct DNSQRecord {
@@ -21,14 +51,14 @@ pub struct DNSQRecord {
     class: u16,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct DNSResRecord {
     name: DNSName,
     type_: u16,
     class: u16,
     ttl: u32,
     rdlength: u16,
-    rdata: Vec<u8>,
+    rdata: DNSRecordData,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -62,34 +92,59 @@ impl DNS {
         start: usize,
         remaining: usize,
     ) -> Result<(DNSName, usize), Error> {
-        #[inline(always)]
-        fn name_from_offset(
+        fn labels_from_offset(
             bytes: &[u8],
             offset: usize,
-            remaining: usize,
-        ) -> Result<(DNSName, usize), Error> {
+            mut remaining: usize,
+            check_remaining: bool,
+        ) -> Result<(Vec<Vec<u8>>, usize), Error> {
             let mut i = offset;
-            while bytes[i] != 0x00 {
-                i += 1;
-                if i > remaining + 5 {
-                    return Err(Error::TooShort);
+
+            let mut consumed = 0;
+            let mut labels: Vec<Vec<u8>> = Vec::new();
+            let _ = loop {
+                let ptr = bytes[i] & 0xC0;
+                match ptr {
+                    0xC0 => {
+                        // This is in offset form, collect labels
+                        let previous = ((bytes[i] & 0x3f) as u16) << 8 | (bytes[i + 1] as u16) - 12;
+                        let (mut prev_labels, _) =
+                            labels_from_offset(bytes, previous as usize, 0, false)?;
+                        labels.append(&mut prev_labels);
+                        consumed += 2;
+                        break true;
+                    }
+                    0x00 => {
+                        if bytes[i] == 0x00 {
+                            consumed += 1;
+                            break false;
+                        }
+
+                        // Collect a single label
+                        let count = bytes[i] as usize + 1_usize;
+                        if check_remaining {
+                            if remaining < count {
+                                return Err(Error::TooShort);
+                            }
+                            consumed += count;
+                            remaining -= count;
+                        }
+
+                        labels.push(bytes[i..i + count].try_into().unwrap());
+                        i += count;
+                    }
+                    _ => {
+                        return Err(Error::ParseError);
+                    }
                 }
-            }
-            i += 1;
+            };
 
-            let name = DNSName(bytes[offset..i].try_into().unwrap());
-
-            Ok((name, i))
+            Ok((labels, consumed))
         }
 
-        if bytes[start] == 0xC0 {
-            let offset = (bytes[start + 1] - 12) as usize; // Don't count the first 12 bytes
-            let (name, _) = name_from_offset(bytes, offset, remaining)?;
-            return Ok((name, 2));
-        } else {
-            let offset = start;
-            name_from_offset(bytes, offset, remaining)
-        }
+        let (labels, consumed) = labels_from_offset(bytes, start, remaining, true)?;
+
+        Ok((DNSName(labels.into_iter().flatten().collect()), consumed))
     }
 
     fn dns_resrecord_from_u8(
@@ -119,9 +174,66 @@ impl DNS {
         if remaining < (rdlength as usize) {
             return Err(Error::TooShort);
         }
-        let rdata = bytes[offset + 8..rdlength as usize].try_into().unwrap();
+        offset += 10;
+        let rdata_buffer = &bytes[offset..offset + rdlength as usize];
 
         i += 10 + rdlength as usize;
+        remaining -= 10 + rdlength as usize;
+
+        let rdata = match type_ {
+            1 => DNSRecordData::A(rdata_buffer.try_into().unwrap()), /* A */
+            28 => DNSRecordData::AAAA(rdata_buffer.try_into().unwrap()), /* AAAA */
+            2 | 3 | 4 | 5 | 7 | 8 | 9 => {
+                let (name, _) = Self::dns_name_from_u8(bytes, i, remaining)?;
+                DNSRecordData::CNAME(name)
+            }
+            6 => {
+                // FIXME: into an inline function?
+                let (mname, consumed) = Self::dns_name_from_u8(bytes, i, remaining)?;
+                i += consumed;
+                remaining -= consumed;
+                let (rname, consumed) = Self::dns_name_from_u8(bytes, i, remaining)?;
+                i += consumed;
+                remaining -= consumed;
+                if remaining < 20 {
+                    return Err(Error::TooShort);
+                }
+                // serial, refresh, retry, expire, minimum
+                let serial = (bytes[i] as u32) << 24
+                    | (bytes[i + 1] as u32) << 16
+                    | (bytes[i + 2] as u32) << 8
+                    | (bytes[i + 3] as u32);
+                let refresh = (bytes[i + 4] as u32) << 24
+                    | (bytes[i + 5] as u32) << 16
+                    | (bytes[i + 6] as u32) << 8
+                    | (bytes[i + 7] as u32);
+                let retry = (bytes[i + 8] as u32) << 24
+                    | (bytes[i + 9] as u32) << 16
+                    | (bytes[i + 10] as u32) << 8
+                    | (bytes[i + 11] as u32);
+                let expire = (bytes[i + 12] as u32) << 24
+                    | (bytes[i + 13] as u32) << 16
+                    | (bytes[i + 14] as u32) << 8
+                    | (bytes[i + 15] as u32);
+                let minimum = (bytes[i + 16] as u32) << 24
+                    | (bytes[i + 17] as u32) << 16
+                    | (bytes[i + 18] as u32) << 8
+                    | (bytes[i + 19] as u32);
+
+                i += 20;
+                DNSRecordData::SOA(DNSSOA {
+                    mname,
+                    rname,
+                    serial,
+                    refresh,
+                    retry,
+                    expire,
+                    minimum,
+                })
+            }
+            _ => DNSRecordData::NULL(rdata_buffer.into()),
+        };
+
         Ok((
             DNSResRecord {
                 name,
@@ -223,5 +335,81 @@ impl Layer for DNS {
 
     fn short_name(&self) -> &str {
         "dns"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn parse_valid_dns_packet() {
+        use crate::layers;
+
+        let _ = layers::register_defaults();
+
+        let dns_query = vec![
+	0x52, 0x54, 0x00, 0xbd, 0x1c, 0x70, 0xfe, 0x54, /* RT...p.T */
+	0x00, 0x3e, 0x00, 0x96, 0x08, 0x00, 0x45, 0x00, /* .>....E. */
+	0x00, 0xe0, 0x00, 0x00, 0x40, 0x00, 0x40, 0x11, /* ....@.@. */
+	0xc4, 0x74, 0xc0, 0xa8, 0x7a, 0x01, 0xc0, 0xa8, /* .t..z... */
+	0x7a, 0x46, 0x00, 0x35, 0xdb, 0x13, 0x00, 0xcc, /* zF.5.... */
+	0x76, 0x76, /* DNS */ 0xf3, 0x03, 0x81, 0x80, 0x00, 0x01, /* vv...... */
+	0x00, 0x01, 0x00, 0x04, 0x00, 0x04, 0x03, 0x77, /* .......w */
+	0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, /* ww.googl */
+	0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x1c, /* e.com... */
+	0x00, 0x01, 0xc0, 0x0c, 0x00, 0x1c, 0x00, 0x01, /* ........ */
+	0x00, 0x00, 0x01, 0x2c, 0x00, 0x10, 0x2a, 0x00, /* ...,..*. */
+	0x14, 0x50, 0x40, 0x0c, 0x0c, 0x01, 0x00, 0x00, /* .P@..... */
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x69, 0xc0, 0x10, /* .....i.. */
+	0x00, 0x02, 0x00, 0x01, 0x00, 0x02, 0xa3, 0x00, /* ........ */
+	0x00, 0x06, 0x03, 0x6e, 0x73, 0x34, 0xc0, 0x10, /* ...ns4.. */
+	0xc0, 0x10, 0x00, 0x02, 0x00, 0x01, 0x00, 0x02, /* ........ */
+	0xa3, 0x00, 0x00, 0x06, 0x03, 0x6e, 0x73, 0x32, /* .....ns2 */
+	0xc0, 0x10, 0xc0, 0x10, 0x00, 0x02, 0x00, 0x01, /* ........ */
+	0x00, 0x02, 0xa3, 0x00, 0x00, 0x06, 0x03, 0x6e, /* .......n */
+	0x73, 0x31, 0xc0, 0x10, 0xc0, 0x10, 0x00, 0x02, /* s1...... */
+	0x00, 0x01, 0x00, 0x02, 0xa3, 0x00, 0x00, 0x06, /* ........ */
+	0x03, 0x6e, 0x73, 0x33, 0xc0, 0x10, 0xc0, 0x6c, /* .ns3...l */
+	0x00, 0x01, 0x00, 0x01, 0x00, 0x02, 0xa3, 0x00, /* ........ */
+	0x00, 0x04, 0xd8, 0xef, 0x20, 0x0a, 0xc0, 0x5a, /* .... ..Z */
+	0x00, 0x01, 0x00, 0x01, 0x00, 0x02, 0xa3, 0x00, /* ........ */
+	0x00, 0x04, 0xd8, 0xef, 0x22, 0x0a, 0xc0, 0x7e, /* ...."..~ */
+	0x00, 0x01, 0x00, 0x01, 0x00, 0x02, 0xa3, 0x00, /* ........ */
+	0x00, 0x04, 0xd8, 0xef, 0x24, 0x0a, 0xc0, 0x48, /* ....$..H */
+	0x00, 0x01, 0x00, 0x01, 0x00, 0x02, 0xa3, 0x00, /* ........ */
+	0x00, 0x04, 0xd8, 0xef, 0x26, 0x0a, /* ....&. */
+        ];
+
+        //let p = Packet::from_u8(&dns_query, ENCAP_TYPE_ETH);
+        let mut dns: Box<dyn crate::Layer> = Box::new(super::DNS::default());
+
+        let p = dns.from_u8(&dns_query[42..]);
+        assert!(p.is_ok(), "{:?}", p.err());
+    }
+
+    #[test]
+    fn test_dns_parse_gopacket_regression() {
+        use crate::types::ENCAP_TYPE_ETH;
+        use crate::Packet;
+
+        // testPacketDNSRegression is the packet:
+        //   11:08:05.708342 IP 109.194.160.4.57766 > 95.211.92.14.53: 63000% [1au] A? picslife.ru. (40)
+        //      0x0000:  0022 19b6 7e22 000f 35bb 0b40 0800 4500  ."..~"..5..@..E.
+        //      0x0010:  0044 89c4 0000 3811 2f3d 6dc2 a004 5fd3  .D....8./=m..._.
+        //      0x0020:  5c0e e1a6 0035 0030 a597 f618 0010 0001  \....5.0........
+        //      0x0030:  0000 0000 0001 0870 6963 736c 6966 6502  .......picslife.
+        //      0x0040:  7275 0000 0100 0100 0029 1000 0000 8000  ru.......)......
+        //      0x0050:  0000                                     ..
+        let test_packet_dns_regression = vec![
+            0x00, 0x22, 0x19, 0xb6, 0x7e, 0x22, 0x00, 0x0f, 0x35, 0xbb, 0x0b, 0x40, 0x08, 0x00,
+            0x45, 0x00, 0x00, 0x44, 0x89, 0xc4, 0x00, 0x00, 0x38, 0x11, 0x2f, 0x3d, 0x6d, 0xc2,
+            0xa0, 0x04, 0x5f, 0xd3, 0x5c, 0x0e, 0xe1, 0xa6, 0x00, 0x35, 0x00, 0x30, 0xa5, 0x97,
+            0xf6, 0x18, 0x00, 0x10, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x08, 0x70,
+            0x69, 0x63, 0x73, 0x6c, 0x69, 0x66, 0x65, 0x02, 0x72, 0x75, 0x00, 0x00, 0x01, 0x00,
+            0x01, 0x00, 0x00, 0x29, 0x10, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00,
+        ];
+        let p = Packet::from_u8(&test_packet_dns_regression, ENCAP_TYPE_ETH);
+        assert!(p.is_ok());
+        let p = p.unwrap();
+        assert!(p.layers.len() == 4, "{:#?}", p);
     }
 }
