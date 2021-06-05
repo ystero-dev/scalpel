@@ -115,24 +115,13 @@ impl DNS {
                 match ptr {
                     0xC0 => {
                         // This is in offset form, collect labels
-                        // There are a couple of things we are doing here, which are worth keeping
-                        // in mind.
                         // 1. The offset is from the start of DNS layer, but the slice we are
                         //    dealing with is past the first header (12 bytes), hence we subtract
                         //    the offset.
-                        // 2. In the Offset form, we collect the previous one by just going through
-                        //    the array, rather than recursively calling ourselves. Because the
-                        //    `offset` form is guaranteed to be terminated in a label ending with
-                        //    zero.
-                        let first = ((bytes[i] & 0x3f) as u16) << 8 | (bytes[i + 1] as u16) - 12;
-                        let mut last = first as usize;
-                        loop {
-                            if bytes[last] == 0x00 {
-                                break;
-                            }
-                            last += 1;
-                        }
-                        labels.extend_from_slice(&bytes[first as usize..=last]);
+                        let previous = ((bytes[i] & 0x3f) as u16) << 8 | (bytes[i + 1] as u16) - 12;
+                        let (prev_label, _) =
+                            labels_from_offset(bytes, previous as usize, 0, false)?;
+                        labels.extend_from_slice(&prev_label);
                         consumed += 2;
                         break true;
                     }
@@ -406,7 +395,7 @@ mod tests {
         let mut dns: Box<dyn crate::Layer> = Box::new(super::DNS::default());
 
         let p = dns.from_u8(&dns_query[42..]);
-        assert!(p.is_ok(), "{:?}", p.err());
+        assert!(p.is_err(), "{:#?}", dns);
     }
 
     #[test]
