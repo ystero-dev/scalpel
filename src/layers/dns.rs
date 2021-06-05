@@ -101,15 +101,15 @@ impl DNS {
         fn labels_from_offset(
             bytes: &[u8],
             offset: usize,
+            labels: &mut Vec<u8>,
             mut remaining: usize,
             check_remaining: bool,
-        ) -> Result<(Vec<u8>, usize), Error> {
+        ) -> Result<usize, Error> {
             let mut i = offset;
 
             let mut consumed = 0;
             // Almost always we have to extend this header, so it's a good idea to reserve it with
             // capacity.
-            let mut labels: Vec<u8> = Vec::with_capacity(24);
             let _ = loop {
                 let ptr = bytes[i] & 0xC0;
                 match ptr {
@@ -119,9 +119,7 @@ impl DNS {
                         //    dealing with is past the first header (12 bytes), hence we subtract
                         //    the offset.
                         let previous = ((bytes[i] & 0x3f) as u16) << 8 | (bytes[i + 1] as u16) - 12;
-                        let (prev_label, _) =
-                            labels_from_offset(bytes, previous as usize, 0, false)?;
-                        labels.extend_from_slice(&prev_label);
+                        let _ = labels_from_offset(bytes, previous as usize, labels, 0, false)?;
                         consumed += 2;
                         break true;
                     }
@@ -151,10 +149,12 @@ impl DNS {
                 }
             };
 
-            Ok((labels, consumed))
+            Ok(consumed)
         }
 
-        let (labels, consumed) = labels_from_offset(bytes, start, remaining, true)?;
+        // Note: 24 seems to be the 'sweetest' spot in terms of reserved capacity.
+        let mut labels = Vec::with_capacity(24);
+        let consumed = labels_from_offset(bytes, start, &mut labels, remaining, true)?;
 
         Ok((DNSName(labels), consumed))
     }
