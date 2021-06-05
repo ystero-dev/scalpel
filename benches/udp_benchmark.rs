@@ -88,8 +88,8 @@ pub fn bench_dns_gopacket_regression(c: &mut Criterion) {
 }
 criterion_group!(
     dns,
+    new_dns_aaaa_from_u8, // FIXME: Have no idea why this benchmark runs slow
     new_dns_packet_from_u8,
-    //new_dns_aaaa_from_u8, // FIXME: Have no idea why this benchmark runs slow
     bench_dns_gopacket_regression
 );
 criterion_main!(dns);

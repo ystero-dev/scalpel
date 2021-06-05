@@ -92,31 +92,54 @@ impl DNS {
         start: usize,
         remaining: usize,
     ) -> Result<(DNSName, usize), Error> {
+        // FIXME: For this function - Every call to this function results in a `Vec` allocation,
+        // which is not so easy to get rid of. But may be we could do better if we could use
+        // references, but the code would be very tricky.
+        //
+        // The `gopacket` code for a similar function does something clever, but I have not fully
+        // understood that.
         fn labels_from_offset(
             bytes: &[u8],
             offset: usize,
             mut remaining: usize,
             check_remaining: bool,
-        ) -> Result<(Vec<Vec<u8>>, usize), Error> {
+        ) -> Result<(Vec<u8>, usize), Error> {
             let mut i = offset;
 
             let mut consumed = 0;
-            let mut labels: Vec<Vec<u8>> = Vec::new();
+            // Almost always we have to extend this header, so it's a good idea to reserve it with
+            // capacity.
+            let mut labels: Vec<u8> = Vec::with_capacity(32);
             let _ = loop {
                 let ptr = bytes[i] & 0xC0;
                 match ptr {
                     0xC0 => {
                         // This is in offset form, collect labels
-                        let previous = ((bytes[i] & 0x3f) as u16) << 8 | (bytes[i + 1] as u16) - 12;
-                        let (mut prev_labels, _) =
-                            labels_from_offset(bytes, previous as usize, 0, false)?;
-                        labels.append(&mut prev_labels);
+                        // There are a couple of things we are doing here, which are worth keeping
+                        // in mind.
+                        // 1. The offset is from the start of DNS layer, but the slice we are
+                        //    dealing with is past the first header (12 bytes), hence we subtract
+                        //    the offset.
+                        // 2. In the Offset form, we collect the previous one by just going through
+                        //    the array, rather than recursively calling ourselves. Because the
+                        //    `offset` form is guaranteed to be terminated in a label ending with
+                        //    zero.
+                        let first = ((bytes[i] & 0x3f) as u16) << 8 | (bytes[i + 1] as u16) - 12;
+                        let mut last = first as usize;
+                        loop {
+                            if bytes[last] == 0x00 {
+                                break;
+                            }
+                            last += 1;
+                        }
+                        labels.extend_from_slice(&bytes[first as usize..=last]);
                         consumed += 2;
                         break true;
                     }
                     0x00 => {
                         if bytes[i] == 0x00 {
                             consumed += 1;
+                            labels.extend_from_slice(&bytes[i..i + 1]);
                             break false;
                         }
 
@@ -130,7 +153,7 @@ impl DNS {
                             remaining -= count;
                         }
 
-                        labels.push(bytes[i..i + count].try_into().unwrap());
+                        labels.extend_from_slice(&bytes[i..i + count]);
                         i += count;
                     }
                     _ => {
@@ -144,7 +167,7 @@ impl DNS {
 
         let (labels, consumed) = labels_from_offset(bytes, start, remaining, true)?;
 
-        Ok((DNSName(labels.into_iter().flatten().collect()), consumed))
+        Ok((DNSName(labels), consumed))
     }
 
     fn dns_resrecord_from_u8(
@@ -388,9 +411,11 @@ mod tests {
 
     #[test]
     fn test_dns_parse_gopacket_regression() {
+        use crate::layers;
         use crate::types::ENCAP_TYPE_ETH;
         use crate::Packet;
 
+        let _ = layers::register_defaults();
         // testPacketDNSRegression is the packet:
         //   11:08:05.708342 IP 109.194.160.4.57766 > 95.211.92.14.53: 63000% [1au] A? picslife.ru. (40)
         //      0x0000:  0022 19b6 7e22 000f 35bb 0b40 0800 4500  ."..~"..5..@..E.
