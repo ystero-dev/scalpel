@@ -109,7 +109,7 @@ impl DNS {
             let mut consumed = 0;
             // Almost always we have to extend this header, so it's a good idea to reserve it with
             // capacity.
-            let mut labels: Vec<u8> = Vec::with_capacity(32);
+            let mut labels: Vec<u8> = Vec::with_capacity(24);
             let _ = loop {
                 let ptr = bytes[i] & 0xC0;
                 match ptr {
@@ -395,7 +395,7 @@ mod tests {
         let mut dns: Box<dyn crate::Layer> = Box::new(super::DNS::default());
 
         let p = dns.from_u8(&dns_query[42..]);
-        assert!(p.is_err(), "{:#?}", dns);
+        assert!(p.is_ok(), "{:#?}", dns);
     }
 
     #[test]
