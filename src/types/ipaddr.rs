@@ -6,11 +6,11 @@ use core::convert::TryFrom;
 use core::fmt;
 use core::fmt::Write;
 
-use serde::Serialize;
+use serde::{Serialize, Serializer};
 
 use crate::errors::Error as CrateError;
 
-#[derive(Default, Clone, Serialize)]
+#[derive(Default, Clone)]
 pub struct IPv4Address([u8; 4]);
 
 impl TryFrom<&'_ [u8]> for IPv4Address {
@@ -47,7 +47,16 @@ impl fmt::Debug for IPv4Address {
     }
 }
 
-#[derive(Default, Clone, Serialize)]
+impl Serialize for IPv4Address {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(format!("{}", self).as_str())
+    }
+}
+
+#[derive(Default, Clone)]
 pub struct IPv6Address([u16; 8]);
 
 impl TryFrom<&'_ [u8]> for IPv6Address {
@@ -181,6 +190,15 @@ impl fmt::Display for IPv6Address {
 impl fmt::Debug for IPv6Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self, f)
+    }
+}
+
+impl Serialize for IPv6Address {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(format!("{}", self).as_str())
     }
 }
 

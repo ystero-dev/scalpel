@@ -6,12 +6,21 @@
 use core::convert::TryFrom;
 use core::fmt;
 
-use serde::Serialize;
+use serde::{Serialize, Serializer};
 
 use crate::errors::Error as CrateError;
 
-#[derive(Default, Clone, Serialize)]
+#[derive(Default, Clone)]
 pub struct MACAddress([u8; 6]);
+
+impl Serialize for MACAddress {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(format!("{}", self).as_str())
+    }
+}
 
 impl TryFrom<&'_ [u8]> for MACAddress {
     type Error = CrateError;

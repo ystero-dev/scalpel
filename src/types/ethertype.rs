@@ -4,9 +4,9 @@ use core::fmt;
 
 use std::hash::Hash;
 
-use serde::Serialize;
+use serde::{Serialize, Serializer};
 
-#[derive(PartialEq, Clone, Default, Hash, Eq, Serialize)]
+#[derive(PartialEq, Clone, Default, Hash, Eq)]
 pub struct EtherType(pub u16);
 
 impl fmt::Display for EtherType {
@@ -18,6 +18,15 @@ impl fmt::Display for EtherType {
 impl fmt::Debug for EtherType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self, f)
+    }
+}
+
+impl Serialize for EtherType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(format!("{}", self).as_str())
     }
 }
 
