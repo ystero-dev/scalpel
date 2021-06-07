@@ -7,6 +7,7 @@ use scalpel::Packet;
 use scalpel::ENCAP_TYPE_ETH;
 
 pub fn new_dns_packet_from_u8(c: &mut Criterion) {
+    // Benchmark Taken from the 'gopacket' Go package.
     let dns_query = vec![
 	0xfe, 0x54, 0x00, 0x3e, 0x00, 0x96, 0x52, 0x54, /* .T.>..RT */
 	0x00, 0xbd, 0x1c, 0x70, 0x08, 0x00, 0x45, 0x00, /* ...p..E. */
@@ -25,6 +26,7 @@ pub fn new_dns_packet_from_u8(c: &mut Criterion) {
 }
 
 pub fn new_dns_aaaa_from_u8(c: &mut Criterion) {
+    // Benchmark Taken from the 'gopacket' Go package.
     let test_dns_aaaa = vec![
 	0x52, 0x54, 0x00, 0xbd, 0x1c, 0x70, 0xfe, 0x54, /* RT...p.T */
 	0x00, 0x3e, 0x00, 0x96, 0x08, 0x00, 0x45, 0x00, /* .>....E. */
@@ -65,6 +67,8 @@ pub fn new_dns_aaaa_from_u8(c: &mut Criterion) {
 }
 
 pub fn bench_dns_gopacket_regression(c: &mut Criterion) {
+    // Benchmark Taken from the 'gopacket' Go package.
+    //
     // testPacketDNSRegression is the packet:
     //   11:08:05.708342 IP 109.194.160.4.57766 > 95.211.92.14.53: 63000% [1au] A? picslife.ru. (40)
     //      0x0000:  0022 19b6 7e22 000f 35bb 0b40 0800 4500  ."..~"..5..@..E.
@@ -88,7 +92,12 @@ pub fn bench_dns_gopacket_regression(c: &mut Criterion) {
 }
 criterion_group!(
     dns,
-    new_dns_aaaa_from_u8, // FIXME: Have no idea why this benchmark runs slow
+    // Note: Following benchmark runs slower then corresponding 'gopacket' benchmark. However, the
+    // benchmarks are not apples to apples comparison. In the 'gopacket' benchmark version the DNS
+    // struct is (and internal vectors are) allocated only once per benchmark. That is not the
+    // case. That makes the 'gopacket' benchmark look faster. But if we run the 'full' packet
+    // decode benchmark our benchmark is fast as seen with other benchmarks.
+    new_dns_aaaa_from_u8,
     new_dns_packet_from_u8,
     bench_dns_gopacket_regression
 );

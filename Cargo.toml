@@ -14,11 +14,12 @@ lazy_static = "1"
 hex = "0.4"
 criterion = "0.3"
 
+# Required by `cargo flamegraph`
 [profile.bench]
 debug = true
 
 [[bench]]
-name = "layer3_benchmark"
+name = "ip_dissect"
 harness = false
 
 
@@ -27,5 +28,5 @@ name = "ipv6_display"
 harness = false
 
 [[bench]]
-name = "udp_benchmark"
+name = "dns"
 harness = false

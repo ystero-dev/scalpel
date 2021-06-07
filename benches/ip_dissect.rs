@@ -1,3 +1,5 @@
+//! Benchmarks for IPv4 and IPV6 dissections.
+//!
 use criterion::{criterion_group, criterion_main, Criterion};
 
 use scalpel::register_defaults;
@@ -22,5 +24,5 @@ pub fn new_ipv4_packet_from_u8(c: &mut Criterion) {
     });
 }
 
-criterion_group!(layer3, new_ipv6_packet_from_u8, new_ipv4_packet_from_u8);
-criterion_main!(layer3);
+criterion_group!(ip_dissect, new_ipv6_packet_from_u8, new_ipv4_packet_from_u8);
+criterion_main!(ip_dissect);

@@ -87,17 +87,14 @@ impl DNS {
         Box::new(DNS::default())
     }
 
+    // A Name needs to be dissected recursively by looking at previous occurence of a name
+    // See https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.4
     fn dns_name_from_u8(
         bytes: &[u8],
         start: usize,
         remaining: usize,
     ) -> Result<(DNSName, usize), Error> {
-        // FIXME: For this function - Every call to this function results in a `Vec` allocation,
-        // which is not so easy to get rid of. But may be we could do better if we could use
-        // references, but the code would be very tricky.
-        //
-        // The `gopacket` code for a similar function does something clever, but I have not fully
-        // understood that.
+        // Get labels for the name. This can get called recursively.
         fn labels_from_offset(
             bytes: &[u8],
             offset: usize,
@@ -108,8 +105,6 @@ impl DNS {
             let mut i = offset;
 
             let mut consumed = 0;
-            // Almost always we have to extend this header, so it's a good idea to reserve it with
-            // capacity.
             let _ = loop {
                 let ptr = bytes[i] & 0xC0;
                 match ptr {
@@ -126,7 +121,7 @@ impl DNS {
                     0x00 => {
                         if bytes[i] == 0x00 {
                             consumed += 1;
-                            labels.extend_from_slice(&bytes[i..i + 1]);
+                            labels.push(bytes[i]);
                             break false;
                         }
 
@@ -352,10 +347,13 @@ impl Layer for DNS {
 
 #[cfg(test)]
 mod tests {
+
+    use crate::layers;
+    use crate::types::ENCAP_TYPE_ETH;
+    use crate::Packet;
+
     #[test]
     fn parse_valid_dns_packet() {
-        use crate::layers;
-
         let _ = layers::register_defaults();
 
         let dns_query = vec![
@@ -400,10 +398,6 @@ mod tests {
 
     #[test]
     fn test_dns_parse_gopacket_regression() {
-        use crate::layers;
-        use crate::types::ENCAP_TYPE_ETH;
-        use crate::Packet;
-
         let _ = layers::register_defaults();
         // testPacketDNSRegression is the packet:
         //   11:08:05.708342 IP 109.194.160.4.57766 > 95.211.92.14.53: 63000% [1au] A? picslife.ru. (40)
