@@ -23,10 +23,10 @@ pub trait Layer: Debug + erased_serde::Serialize {
     fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error>;
 
     /// Name for the given layer.
-    fn name(&self) -> &str;
+    fn name(&self) -> &'static str;
 
     /// Short name for the given layer.
-    fn short_name(&self) -> &str;
+    fn short_name(&self) -> &'static str;
 }
 
 serialize_trait_object!(Layer);
@@ -46,12 +46,12 @@ impl Layer for EmptyLayer {
     }
 
     #[inline(always)]
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "empty"
     }
 
     #[inline(always)]
-    fn short_name(&self) -> &str {
+    fn short_name(&self) -> &'static str {
         "empty"
     }
 }

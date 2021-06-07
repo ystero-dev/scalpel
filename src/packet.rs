@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 use lazy_static::lazy_static;
-use serde::Serialize;
+use serde::{ser::SerializeStruct, Serialize, Serializer};
 
 use crate::types::{EncapType, LayerCreatorFn, ENCAP_TYPE_ETH};
 use crate::Error;
@@ -39,10 +39,30 @@ struct Timestamp {
 ///                   `layers` above.
 #[derive(Debug, Default, Serialize)]
 pub struct Packet<'a> {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<&'a [u8]>,
     pub meta: PacketMetadata,
+    #[serde(serialize_with = "serialize_layers_as_struct")]
     pub layers: Vec<Box<dyn Layer>>,
+    #[serde(
+        skip_serializing_if = "Vec::is_empty",
+        serialize_with = "hex::serde::serialize"
+    )]
     pub unprocessed: Vec<u8>,
+}
+
+fn serialize_layers_as_struct<S>(
+    layers: &Vec<Box<dyn Layer>>,
+    serializer: S,
+) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+where
+    S: Serializer,
+{
+    let mut state = serializer.serialize_struct("layers", layers.len())?;
+    for layer in layers {
+        state.serialize_field(layer.short_name(), layer)?;
+    }
+    state.end()
 }
 
 /// Metadata associated with the Packet.

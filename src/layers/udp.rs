@@ -79,11 +79,11 @@ impl Layer for UDP {
         }
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "UDP"
     }
 
-    fn short_name(&self) -> &str {
+    fn short_name(&self) -> &'static str {
         "udp"
     }
 }

@@ -96,11 +96,11 @@ impl Layer for IPv4 {
         }
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "IPv4"
     }
 
-    fn short_name(&self) -> &str {
+    fn short_name(&self) -> &'static str {
         "ip"
     }
 }

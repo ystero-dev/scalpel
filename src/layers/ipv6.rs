@@ -87,11 +87,11 @@ impl Layer for IPv6 {
         }
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "IPv6"
     }
 
-    fn short_name(&self) -> &str {
+    fn short_name(&self) -> &'static str {
         "ip6"
     }
 }

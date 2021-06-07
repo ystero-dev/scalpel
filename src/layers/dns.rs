@@ -338,11 +338,11 @@ impl Layer for DNS {
         Ok((None, decoded))
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "DNS"
     }
 
-    fn short_name(&self) -> &str {
+    fn short_name(&self) -> &'static str {
         "dns"
     }
 }
