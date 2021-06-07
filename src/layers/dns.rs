@@ -2,12 +2,14 @@
 
 use core::convert::TryInto;
 
+use serde::Serialize;
+
 use crate::errors::Error;
 use crate::layer::Layer;
 use crate::layers::udp;
 use crate::{IPv4Address, IPv6Address};
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Serialize)]
 pub struct DNSSOA {
     mname: DNSName,
     rname: DNSName,
@@ -18,7 +20,7 @@ pub struct DNSSOA {
     minimum: u32,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum DNSRecordData {
     Empty,
     A(IPv4Address),
@@ -41,17 +43,17 @@ pub fn register_defaults() -> Result<(), Error> {
     udp::register_app(53, DNS::creator)
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize)]
 pub struct DNSName(Vec<u8>);
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize)]
 pub struct DNSQRecord {
     name: DNSName,
     type_: u16,
     class: u16,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct DNSResRecord {
     name: DNSName,
     type_: u16,
@@ -61,7 +63,7 @@ pub struct DNSResRecord {
     rdata: DNSRecordData,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize)]
 pub struct DNS {
     id: u16,
     qr: bool,

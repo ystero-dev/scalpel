@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 use lazy_static::lazy_static;
+use serde::Serialize;
 
 use crate::errors::Error;
 use crate::layer::Layer;
@@ -40,7 +41,7 @@ pub fn register_app(port: u16, app: LayerCreatorFn) -> Result<(), Error> {
     Ok(())
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize)]
 struct UDP {
     src_port: u16,
     dst_port: u16,

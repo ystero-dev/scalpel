@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 use lazy_static::lazy_static;
+use serde::Serialize;
 
 use crate::errors::Error;
 use crate::layer::Layer;
@@ -43,7 +44,7 @@ pub fn register_next_header(header: u8, creator: LayerCreatorFn) -> Result<(), E
     Ok(())
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize)]
 pub struct IPv6 {
     version: u8,
     traffic_class: u8,

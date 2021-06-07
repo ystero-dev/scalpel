@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 use lazy_static::lazy_static;
+use serde::Serialize;
 
 use crate::errors::Error;
 use crate::layer::Layer;
@@ -42,7 +43,7 @@ pub fn register_protocol(proto: u8, creator: LayerCreatorFn) -> Result<(), Error
     Ok(())
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize)]
 pub struct IPv4 {
     version: u8,
     hdr_len: u8,

@@ -1,9 +1,12 @@
 ///! EtherType structure and definition of Well Known EtherTypes
 ///
-use std::fmt;
+use core::fmt;
+
 use std::hash::Hash;
 
-#[derive(PartialEq, Clone, Default, Hash, Eq)]
+use serde::Serialize;
+
+#[derive(PartialEq, Clone, Default, Hash, Eq, Serialize)]
 pub struct EtherType(pub u16);
 
 impl fmt::Display for EtherType {

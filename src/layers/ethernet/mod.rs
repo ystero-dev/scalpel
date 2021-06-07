@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 use lazy_static::lazy_static;
+use serde::Serialize;
 
 use crate::types::ENCAP_TYPE_ETH;
 use crate::types::{EtherType, LayerCreatorFn, MACAddress};
@@ -46,7 +47,7 @@ pub fn register_ethertype(eth_type: EtherType, layer: LayerCreatorFn) -> Result<
     Ok(())
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize)]
 pub struct Ethernet {
     src_mac: MACAddress,
     dst_mac: MACAddress,

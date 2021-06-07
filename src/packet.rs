@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 use lazy_static::lazy_static;
+use serde::Serialize;
 
 use crate::types::{EncapType, LayerCreatorFn, ENCAP_TYPE_ETH};
 use crate::Error;
@@ -18,7 +19,7 @@ lazy_static! {
         RwLock::new(HashMap::new());
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 struct Timestamp {
     secs: i64,
     nsecs: i64,
@@ -36,7 +37,7 @@ struct Timestamp {
 ///              Each of the following is a Layer - `Ethernet`, `IPv4`, `TCP` etc.
 ///  * `unprocessed`: The partof the original byte-stream that is not processed and captured into
 ///                   `layers` above.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct Packet<'a> {
     pub data: Option<&'a [u8]>,
     pub meta: PacketMetadata,
@@ -45,7 +46,7 @@ pub struct Packet<'a> {
 }
 
 /// Metadata associated with the Packet.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct PacketMetadata {
     /// Capture timestamp
     timestamp: Timestamp,

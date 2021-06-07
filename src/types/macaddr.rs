@@ -6,9 +6,11 @@
 use core::convert::TryFrom;
 use core::fmt;
 
+use serde::Serialize;
+
 use crate::errors::Error as CrateError;
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Serialize)]
 pub struct MACAddress([u8; 6]);
 
 impl TryFrom<&'_ [u8]> for MACAddress {

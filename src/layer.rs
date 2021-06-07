@@ -6,9 +6,11 @@
 
 use core::fmt::Debug;
 
+use erased_serde::serialize_trait_object;
+
 use crate::Error;
 
-pub trait Layer: Debug {
+pub trait Layer: Debug + erased_serde::Serialize {
     /// Basic 'decoder' function.
     ///
     /// The return value is a Tuple (`Option<Box<dyn Error>>`, usize)` on success. This indicates
@@ -27,16 +29,19 @@ pub trait Layer: Debug {
     fn short_name(&self) -> &str;
 }
 
+serialize_trait_object!(Layer);
+
+///
 /// An empty Layer indicating 'last' decoded layer.
 ///
 /// Typically when a Layer can no longer determine the next layer to be decoded, the 'decoder'
 /// function returns `None` (See `from_u8`). This is used for adding an 'Empty' layer as next layer
 /// which is discarded.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, serde::Serialize)]
 pub struct EmptyLayer;
 
-impl<'a> Layer for EmptyLayer {
-    fn from_u8<'b>(&mut self, _btes: &'_ [u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
+impl Layer for EmptyLayer {
+    fn from_u8(&mut self, _btes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
         Ok((Some(Box::new(EmptyLayer {})), 0))
     }
 
