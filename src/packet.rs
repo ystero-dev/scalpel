@@ -126,6 +126,9 @@ impl<'a> Packet<'a> {
             }
 
             if res.0.is_none() {
+                // We need to get out the 'last' layer and hence replace it with an EmptyLayer that
+                // is kept in the `RefCell` which will get dropped later. Empty Layer is like
+                // `Default::default()` for `Box<dyn Layer>`
                 let boxed = layer.replace(Box::new(EmptyLayer {}));
 
                 p.layers.push(boxed);
@@ -141,8 +144,7 @@ impl<'a> Packet<'a> {
             p.layers.push(boxed);
         }
         if start != bytes.len() {
-            let new: Vec<_> = bytes[start..].into();
-            let _ = core::mem::replace(&mut p.unprocessed, new);
+            let _ = core::mem::replace(&mut p.unprocessed, bytes[start..].to_vec());
         }
         Ok(p)
     }

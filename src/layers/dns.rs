@@ -1,8 +1,9 @@
 //! Handling of DNS layer
 
 use core::convert::TryInto;
+use core::fmt;
 
-use serde::Serialize;
+use serde::{Serialize, Serializer};
 
 use crate::errors::Error;
 use crate::layer::Layer;
@@ -43,12 +44,47 @@ pub fn register_defaults() -> Result<(), Error> {
     udp::register_app(53, DNS::creator)
 }
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Default, Clone)]
 pub struct DNSName(Vec<u8>);
+
+impl fmt::Display for DNSName {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut out = String::new();
+        let mut i = 0_usize;
+        let name = loop {
+            let x = self.0[i] as usize;
+            if x == 0 {
+                let _ = out.pop(); // Pop the last '.'
+                break out.as_str();
+            } else {
+                out += core::str::from_utf8(&self.0[i + 1..=i + x]).unwrap();
+                out += ".";
+                i += x + 1;
+            }
+        };
+        write!(f, "{}", name)
+    }
+}
+
+impl fmt::Debug for DNSName {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(self, f)
+    }
+}
+
+impl Serialize for DNSName {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(format!("{}", self).as_str())
+    }
+}
 
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DNSQRecord {
     name: DNSName,
+    #[serde(rename = "type")]
     type_: u16,
     class: u16,
 }
@@ -56,6 +92,7 @@ pub struct DNSQRecord {
 #[derive(Debug, Clone, Serialize)]
 pub struct DNSResRecord {
     name: DNSName,
+    #[serde(rename = "type")]
     type_: u16,
     class: u16,
     ttl: u32,
