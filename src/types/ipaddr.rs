@@ -97,23 +97,23 @@ impl TryFrom<&'_ str> for IPv6Address {
     }
 }
 
-// Following structures are private structures used primarily by formatter.
-#[derive(Debug)]
-struct ZeroGroup {
-    count: u8,
-}
-
-#[derive(Debug)]
-enum IPv6Segment {
-    NonZeroSegment(u16),
-    ZeroSegment(ZeroGroup),
-}
-
-#[derive(Debug, Default)]
-struct IPv6Segments([Option<IPv6Segment>; 8]);
-
 impl fmt::Display for IPv6Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Following structures are private structures used primarily by formatter.
+        #[derive(Debug)]
+        struct ZeroGroup {
+            count: u8,
+        }
+
+        #[derive(Debug)]
+        enum IPv6Segment {
+            NonZeroSegment(u16),
+            ZeroSegment(ZeroGroup),
+        }
+
+        #[derive(Debug, Default)]
+        struct IPv6Segments([Option<IPv6Segment>; 8]);
+
         let mut segments = IPv6Segments::default();
 
         let mut in_zero_streak = true;

@@ -102,6 +102,7 @@ pub struct DNSResRecord {
 
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DNS {
+    #[serde(serialize_with = "crate::types::hex::serialize_lower_hex_u16")]
     id: u16,
     qr: bool,
     opcode: u8,
@@ -347,6 +348,7 @@ impl Layer for DNS {
             return Err(Error::TooShort);
         }
 
+        //self.id = U16Hex((bytes[0] as u16) << 8 | (bytes[1] as u16));
         self.id = (bytes[0] as u16) << 8 | (bytes[1] as u16);
 
         let first = bytes[2];

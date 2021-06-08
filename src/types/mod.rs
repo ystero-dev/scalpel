@@ -11,6 +11,8 @@ pub use ethertype::*;
 mod ipaddr;
 pub use ipaddr::*;
 
+pub mod hex;
+
 /// Creator function type
 pub type LayerCreatorFn = fn() -> Box<dyn Layer>;
 
