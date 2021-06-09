@@ -36,3 +36,8 @@ harness = false
 [[bench]]
 name = "dns"
 harness = false
+
+
+[build-dependencies]
+syn = { version = "1.0", features = ["full"]}
+walkdir = "2"

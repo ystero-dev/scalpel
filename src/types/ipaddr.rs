@@ -259,7 +259,7 @@ mod tests {
         for test_case in test_cases {
             let ipv6: Result<IPv6Address, _> =
                 test_case.input.parse::<Ipv6Addr>().unwrap().segments()[..].try_into();
-            assert!(ipv6.is_ok(), test_case.valid);
+            assert!(ipv6.is_ok(), "{}", test_case.valid);
             if test_case.valid {
                 let ipv6 = ipv6.unwrap();
                 assert_eq!(test_case.input, format!("{}", ipv6));

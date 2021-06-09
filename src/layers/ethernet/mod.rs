@@ -25,10 +25,8 @@ lazy_static! {
 
 }
 
-/// Register our Encap Types with the Packet.
-///
-/// This function is a No-Op right now since this is the only Encap Type supported right now.
-pub fn register_defaults() -> Result<(), Error> {
+// Register our Encap Types with the Packet.
+pub(crate) fn register_defaults() -> Result<(), Error> {
     Packet::register_encap_type(ENCAP_TYPE_ETH, Ethernet::creator)
 }
 

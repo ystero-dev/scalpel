@@ -21,8 +21,8 @@ pub const UDP_HDR_LEN: usize = 8_usize;
 /// IANA Assigned protocol number for UDP
 pub const IPPROTO_UDP: u8 = 17_u8;
 
-/// Register UDP with Protocol Handler in IPv4 and IPv6
-pub fn register_defaults() -> Result<(), Error> {
+// Register UDP with Protocol Handler in IPv4 and IPv6
+pub(crate) fn register_defaults() -> Result<(), Error> {
     ipv4::register_protocol(IPPROTO_UDP, UDP::creator)?;
     ipv6::register_next_header(IPPROTO_UDP, UDP::creator)?;
 

@@ -18,10 +18,10 @@ lazy_static! {
     static ref PROTOCOLS_MAP: RwLock<HashMap<u8, LayerCreatorFn>> = RwLock::new(HashMap::new());
 }
 
-/// Register ourselves to well-known Layer 2
-///
-/// Right now only Ethernet is Supported
-pub fn register_defaults() -> Result<(), Error> {
+// Register ourselves to well-known Layer 2
+//
+// Right now only Ethernet is Supported
+pub(crate) fn register_defaults() -> Result<(), Error> {
     use crate::layers::ethernet::register_ethertype;
 
     register_ethertype(crate::types::ETHERTYPE_IP.clone(), IPv4::creator)?;
