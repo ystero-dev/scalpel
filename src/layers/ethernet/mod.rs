@@ -9,9 +9,11 @@ use std::sync::RwLock;
 use lazy_static::lazy_static;
 use serde::Serialize;
 
+use crate::errors::Error;
+use crate::layer::Layer;
+use crate::packet::Packet;
 use crate::types::ENCAP_TYPE_ETH;
 use crate::types::{EtherType, LayerCreatorFn, MACAddress};
-use crate::{Error, Layer, Packet};
 
 pub const ETH_HEADER_LEN: usize = 14_usize;
 

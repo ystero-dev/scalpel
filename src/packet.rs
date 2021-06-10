@@ -10,9 +10,9 @@ use std::sync::RwLock;
 use lazy_static::lazy_static;
 use serde::{ser::SerializeStruct, Serialize, Serializer};
 
+use crate::errors::Error;
+use crate::layer::{EmptyLayer, Layer};
 use crate::types::{EncapType, LayerCreatorFn, ENCAP_TYPE_ETH};
-use crate::Error;
-use crate::{EmptyLayer, Layer};
 
 lazy_static! {
     static ref ENCAP_TYPES_MAP: RwLock<HashMap<EncapType, LayerCreatorFn>> =
@@ -82,7 +82,8 @@ impl<'a> Packet<'a> {
     /// Register a new Layer 2 encoding
     ///
     /// In order to dissect bytes on wire into a [`Packet`] structure, the right encoding needs to
-    /// be registered. An internal Map of [`EncapType`] -> [`LayerCreatorFn`] is updated when a new
+    /// be registered. An internal Map of [`EncapType`][`crate::types::EncapType`] ->
+    /// [`LayerCreatorFn`][`crate::types::LayerCreatorFn`] is updated when a new
     /// Layer 2 registers itself. This will cause the 'decoder' function for that layer.
     pub fn register_encap_type(encap: EncapType, creator: LayerCreatorFn) -> Result<(), Error> {
         let mut map = ENCAP_TYPES_MAP.write().unwrap();

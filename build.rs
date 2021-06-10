@@ -52,12 +52,12 @@ fn main() {
     let mut output_str = r#"
 /// Register Default protocol handlers.
 ///
-/// Each [`crate::layer::Layer`] in `scalpel` will be decoded by a certain field in the upper
-/// layer for which this particular layer is a payload. For example, [`ipv4::IPv4`] is a payload
-/// for [`ethernet::Ethernet`]. Thus while decoding a particular layer, the next layer to be
-/// decoded is determined by a value of certain filed in the current layer. In the example above,
-/// EtherType in the Ethernet header determines the next layer (EtherType: 0x8000 corresponds to
-/// [`ipv4::IPv4`]).
+/// Each [`Layer`][`crate::layer::Layer`] in `scalpel` will be decoded by a certain field in the
+/// upper layer for which this particular layer is a payload. For example, [`ipv4::IPv4`] is a
+/// payload for [`ethernet::Ethernet`]. Thus while decoding a particular layer, the next layer to
+/// be decoded is determined by a value of certain filed in the current layer. In the example
+/// above, EtherType in the Ethernet header determines the next layer (EtherType: 0x8000
+/// corresponds to [`ipv4::IPv4`]).
 ///
 /// In this function we just call the `register_defaults` layers  for the currently supported
 /// layers.
@@ -68,13 +68,11 @@ fn main() {
 "#
     .to_string();
 
-    output_str += "pub fn register_defaults() -> Result<(), crate::Error> {\n\t";
+    output_str += "pub fn register_defaults() -> Result<(), crate::errors::Error> {\n\t";
     output_str += &reg_defaults.join("\n\t");
 
     output_str += "\n\n\tOk(())\n";
     output_str += "}";
-
-    println!("{}", output_str);
 
     let output_path = PathBuf::from(env::var("OUT_DIR").unwrap());
     let outfile_path = output_path.join("register_defaults.rs");

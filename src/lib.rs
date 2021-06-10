@@ -12,20 +12,17 @@
 //! it's possible for anyone to write a dissector for a new protocol. `scalpel` natively supports
 //! dissection for a set of widely used protocols out of the box. See [`layers`] for details.
 //!
-//! A Basic unit in a scalpel is a [`Packet`], a struct representing a dissected Packet from the
-//! wire, which is made up of a set of one or more `layers`. See [`crate::Packet`] for details.
+//! A Basic unit in a scalpel is a [`Packet`][`crate::packet::Packet`], a struct representing a
+//! dissected Packet from the wire, which is made up of a set of one or more `layers`.
+//! See [`Packet`][`crate::packet::Packet`] for details.
 
 pub mod layers;
 pub use layers::register_defaults;
 
-mod errors;
-pub use errors::*;
+pub mod errors;
 
-mod packet;
-pub use packet::*;
+pub mod packet;
 
-mod layer;
-pub use layer::*;
+pub mod layer;
 
-mod types;
-pub use types::*;
+pub mod types;

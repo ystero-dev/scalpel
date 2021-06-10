@@ -37,7 +37,7 @@ fn main() {
 	0x00, 0x01, 0x00, 0x01, 0x00, 0x02, 0xa3, 0x00, /* ........ */
 	0x00, 0x04, 0xd8, 0xef, 0x26, 0x0a, /* ....&. */
     ];
-    let p = scalpel::Packet::from_u8(&dns_packet, scalpel::ENCAP_TYPE_ETH);
+    let p = scalpel::packet::Packet::from_u8(&dns_packet, scalpel::types::ENCAP_TYPE_ETH);
 
     println!("{}", serde_json::to_string_pretty(&p.unwrap()).unwrap());
 }

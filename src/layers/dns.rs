@@ -8,7 +8,7 @@ use serde::{Serialize, Serializer};
 use crate::errors::Error;
 use crate::layer::Layer;
 use crate::layers::udp;
-use crate::{IPv4Address, IPv6Address};
+use crate::types::{IPv4Address, IPv6Address};
 
 #[derive(Default, Debug, Clone, Serialize)]
 pub struct DNSSOA {
@@ -39,8 +39,8 @@ pub enum DNSRecordData {
     SOA(DNSSOA),
 }
 
-/// Register ourselves with parent
-pub fn register_defaults() -> Result<(), Error> {
+// Register ourselves with parent
+pub(crate) fn register_defaults() -> Result<(), Error> {
     udp::register_app(53, DNS::creator)
 }
 
@@ -54,7 +54,6 @@ impl fmt::Display for DNSName {
         let name = loop {
             let x = self.0[i] as usize;
             if x == 0 {
-                let _ = out.pop(); // Pop the last '.'
                 break out.as_str();
             } else {
                 out += core::str::from_utf8(&self.0[i + 1..=i + x]).unwrap();
@@ -153,6 +152,8 @@ impl DNS {
                         // 1. The offset is from the start of DNS layer, but the slice we are
                         //    dealing with is past the first header (12 bytes), hence we subtract
                         //    the offset.
+                        //  2. The `labels` param 'collects' the labels and we only consume two
+                        //     bytes.
                         let previous = ((bytes[i] & 0x3f) as u16) << 8 | (bytes[i + 1] as u16) - 12;
                         let _ = labels_from_offset(bytes, previous as usize, labels, 0, false)?;
                         consumed += 2;
@@ -371,8 +372,8 @@ impl Layer for DNS {
         decoded = 12;
 
         let remaining = bytes.len() - 12;
-        let qbytes = self.records_from_u8(&bytes[decoded..], remaining)?;
-        decoded += qbytes;
+        let record_bytes = self.records_from_u8(&bytes[decoded..], remaining)?;
+        decoded += record_bytes;
 
         Ok((None, decoded))
     }
@@ -390,8 +391,8 @@ impl Layer for DNS {
 mod tests {
 
     use crate::layers;
+    use crate::packet::Packet;
     use crate::types::ENCAP_TYPE_ETH;
-    use crate::Packet;
 
     #[test]
     fn parse_valid_dns_packet() {
@@ -431,7 +432,7 @@ mod tests {
         ];
 
         //let p = Packet::from_u8(&dns_query, ENCAP_TYPE_ETH);
-        let mut dns: Box<dyn crate::Layer> = Box::new(super::DNS::default());
+        let mut dns: Box<dyn crate::layer::Layer> = Box::new(super::DNS::default());
 
         let p = dns.from_u8(&dns_query[42..]);
         assert!(p.is_ok(), "{:#?}", dns);

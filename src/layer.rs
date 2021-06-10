@@ -8,7 +8,7 @@ use core::fmt::Debug;
 
 use erased_serde::serialize_trait_object;
 
-use crate::Error;
+use crate::errors::Error;
 
 pub trait Layer: Debug + erased_serde::Serialize {
     /// Basic 'decoder' function.

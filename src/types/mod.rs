@@ -1,6 +1,6 @@
 //! All types that we are supporting
 
-use crate::Layer;
+use crate::layer::Layer;
 
 mod macaddr;
 pub use macaddr::*;
@@ -13,7 +13,7 @@ pub use ipaddr::*;
 
 pub mod hex;
 
-/// Creator function type
+/// Type for a 'Layer' creator function.
 pub type LayerCreatorFn = fn() -> Box<dyn Layer>;
 
 /// Packet Encapsulation Type
