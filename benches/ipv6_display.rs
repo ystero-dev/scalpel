@@ -1,4 +1,4 @@
-use scalpel::IPv6Address;
+use scalpel::types::IPv6Address;
 use std::net::Ipv6Addr;
 use std::time::Instant;
 

@@ -1,10 +1,10 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
+use scalpel::layer::Layer;
 use scalpel::layers::dns::DNS;
-use scalpel::register_defaults;
-use scalpel::Layer;
-use scalpel::Packet;
-use scalpel::ENCAP_TYPE_ETH;
+use scalpel::layers::register_defaults;
+use scalpel::packet::Packet;
+use scalpel::types::ENCAP_TYPE_ETH;
 
 pub fn new_dns_packet_from_u8(c: &mut Criterion) {
     // Benchmark Taken from the 'gopacket' Go package.

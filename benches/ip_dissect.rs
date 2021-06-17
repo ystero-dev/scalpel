@@ -2,9 +2,9 @@
 //!
 use criterion::{criterion_group, criterion_main, Criterion};
 
-use scalpel::register_defaults;
-use scalpel::Packet;
-use scalpel::ENCAP_TYPE_ETH;
+use scalpel::layers::register_defaults;
+use scalpel::packet::Packet;
+use scalpel::types::ENCAP_TYPE_ETH;
 
 pub fn new_ipv6_packet_from_u8(c: &mut Criterion) {
     let bytes = hex::decode("000573a007d168a3c4f949f686dd600000000020064020010470e5bfdead49572174e82c48872607f8b0400c0c03000000000000001af9c7001903a088300000000080022000da4700000204058c0103030801010402").unwrap();
