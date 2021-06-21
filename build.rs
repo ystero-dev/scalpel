@@ -6,7 +6,7 @@ use std::path::PathBuf;
 // This generates the `layers::register_defaults` function. Right now the implementation is rather
 // dirty and perhaps can be made better using APIs from `ra_ap_hir` or `ra_ap_vfs`, but that's an
 // overkill at the moment. We should fix bugs in this if any.
-fn main() {
+fn main() -> std::io::Result<()> {
     let sources_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("src");
 
     let walker = walkdir::WalkDir::new(&sources_dir);
@@ -19,7 +19,12 @@ fn main() {
             let mut content = String::new();
             file.read_to_string(&mut content).unwrap();
 
-            let ast = syn::parse_file(&content).unwrap();
+            let ast = syn::parse_file(&content).map_err(|e| {
+                std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("file: {:?}, Error: {:?}", entry.path(), e),
+                )
+            })?;
             for item in ast.items {
                 match item {
                     syn::Item::Fn(ref i) => {
@@ -86,4 +91,6 @@ fn main() {
         .arg(&outfile_path)
         .output()
         .expect("Failed to rustfmt");
+
+    Ok(())
 }
