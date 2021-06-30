@@ -157,6 +157,12 @@ mod tests {
     use super::*;
     use hex;
 
+    use crate::layers;
+    use crate::layers::ethernet::ETH_HEADER_LEN;
+    use crate::layers::ipv4::IPV4_BASE_HDR_LEN;
+    use crate::layers::ipv6::IPV6_BASE_HDR_LEN;
+    use crate::layers::tcp::TCP_BASE_HDR_LEN;
+
     #[test]
     fn from_u8_fail_too_short() {
         let _ = crate::layers::register_defaults();
@@ -177,10 +183,6 @@ mod tests {
 
     #[test]
     fn parse_valid_ipv4_packet() {
-        use crate::layers;
-        use crate::layers::ethernet::ETH_HEADER_LEN;
-        use crate::layers::ipv4::IPV4_BASE_HDR_LEN;
-
         let _ = layers::register_defaults();
 
         let array = hex::decode("00e08100b02800096b88f5c90800450000c1d24940008006c85b0a000005cf2e865e0cc30050a80076877de014025018faf0ad62000048454144202f76342f69756964656e742e6361623f3033303730313132303820485454502f312e310d0a4163636570743a202a2f2a0d0a557365722d4167656e743a20496e6475737472792055706461746520436f6e74726f6c0d0a486f73743a2077696e646f77737570646174652e6d6963726f736f66742e636f6d0d0a436f6e6e656374696f6e3a204b6565702d416c6976650d0a0d0a");
@@ -192,10 +194,10 @@ mod tests {
         assert!(p.is_ok(), "{:?}", p.err());
 
         let p = p.unwrap();
-        assert!(p.layers.len() == 2, "{:?}", p);
+        assert!(p.layers.len() == 3, "{:?}", p);
         assert!(
-            p.unprocessed.len() == (len - (ETH_HEADER_LEN + IPV4_BASE_HDR_LEN)),
-            "{}:{}:{:?}",
+            p.unprocessed.len() == (len - (ETH_HEADER_LEN + IPV4_BASE_HDR_LEN + TCP_BASE_HDR_LEN)),
+            "{}:{}:{:#?}",
             len,
             p.unprocessed.len(),
             p
@@ -204,10 +206,6 @@ mod tests {
 
     #[test]
     fn parse_valid_ipv6_packet() {
-        use crate::layers;
-        use crate::layers::ethernet::ETH_HEADER_LEN;
-        use crate::layers::ipv6::IPV6_BASE_HDR_LEN;
-
         let _ = layers::register_defaults();
 
         let array = hex::decode("000573a007d168a3c4f949f686dd600000000020064020010470e5bfdead49572174e82c48872607f8b0400c0c03000000000000001af9c7001903a088300000000080022000da4700000204058c0103030801010402");
@@ -220,10 +218,10 @@ mod tests {
         assert!(p.is_ok(), "{:?}", p.err());
 
         let p = p.unwrap();
-        assert!(p.layers.len() == 2, "{:?}", p);
+        assert!(p.layers.len() == 3, "{:?}", p);
         assert!(
-            p.unprocessed.len() == (len - (ETH_HEADER_LEN + IPV6_BASE_HDR_LEN)),
-            "{}:{}:{:?}",
+            p.unprocessed.len() == (len - (ETH_HEADER_LEN + IPV6_BASE_HDR_LEN + TCP_BASE_HDR_LEN)),
+            "{}:{}:{:#?}",
             len,
             p.unprocessed.len(),
             p

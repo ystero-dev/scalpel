@@ -57,7 +57,7 @@ impl UDP {
 
 impl Layer for UDP {
     fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
-        if bytes.len() < 8 {
+        if bytes.len() < UDP_HDR_LEN {
             return Err(Error::TooShort);
         }
 

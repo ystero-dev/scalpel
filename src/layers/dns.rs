@@ -441,6 +441,7 @@ mod tests {
     #[test]
     fn test_dns_parse_gopacket_regression() {
         let _ = layers::register_defaults();
+
         // testPacketDNSRegression is the packet:
         //   11:08:05.708342 IP 109.194.160.4.57766 > 95.211.92.14.53: 63000% [1au] A? picslife.ru. (40)
         //      0x0000:  0022 19b6 7e22 000f 35bb 0b40 0800 4500  ."..~"..5..@..E.

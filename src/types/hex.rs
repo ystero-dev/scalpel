@@ -16,7 +16,7 @@ macro_rules! generate_serialize_hex_fns {
         }
     };
 
-    ($($tt:tt),*) => {
+    ($($tt:tt,)*) => {
         $(
             generate_serialize_hex_fns!($tt);
         )+
@@ -32,5 +32,5 @@ generate_serialize_hex_fns! {
     (serialize_upper_hex_u8, "0x{:02X}", core::fmt::UpperHex),
     (serialize_upper_hex_u16, "0x{:04X}", core::fmt::UpperHex),
     (serialize_upper_hex_u32, "0x{:08X}", core::fmt::UpperHex),
-    (serialize_upper_hex_u64, "0x{:016X}", core::fmt::UpperHex)
+    (serialize_upper_hex_u64, "0x{:016X}", core::fmt::UpperHex),
 }
