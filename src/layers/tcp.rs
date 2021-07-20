@@ -30,6 +30,21 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
     Ok(())
 }
 
+/// Register An App for decoding after TCP Layer
+///
+/// This is a public API function for an App whose dissector should be called after TCP Layer's if
+/// the Source or Destination port matches one of the ports.
+pub fn register_app(port: u16, app: LayerCreatorFn) -> Result<(), Error> {
+    let mut map = TCP_APPS_MAP.write().unwrap();
+
+    if map.contains_key(&port) {
+        return Err(Error::RegisterError);
+    }
+    map.insert(port, app);
+
+    Ok(())
+}
+
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct TCP {
     src_port: u16,
@@ -71,7 +86,17 @@ impl Layer for TCP {
         self.checksum = (bytes[16] as u16) << 8 | (bytes[17] as u16);
         self.urgent_ptr = (bytes[18] as u16) << 8 | (bytes[19] as u16);
 
-        Ok((None, 20))
+        let map = TCP_APPS_MAP.read().unwrap();
+        let mut app = map.get(&self.dst_port);
+        if app.is_none() {
+            app = map.get(&self.src_port);
+        }
+        if app.is_none() {
+            Ok((None, TCP_BASE_HDR_LEN))
+        } else {
+            let app_creator = app.unwrap();
+            Ok((Some(app_creator()), TCP_BASE_HDR_LEN))
+        }
     }
 
     fn name(&self) -> &'static str {

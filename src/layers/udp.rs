@@ -30,6 +30,9 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
 }
 
 /// API for an Application to register with us
+///
+/// This is a public API function for an App whose dissector should be called after UDP Layer's if
+/// the Source or Destination port matches one of the ports.
 pub fn register_app(port: u16, app: LayerCreatorFn) -> Result<(), Error> {
     let mut map = UDP_APPS_MAP.write().unwrap();
 
