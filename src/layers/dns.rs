@@ -10,7 +10,7 @@ use crate::layer::Layer;
 use crate::layers::udp;
 use crate::types::{IPv4Address, IPv6Address};
 
-#[derive(Default, Debug, Clone, Serialize)]
+#[derive(Default, Debug, Serialize)]
 pub struct DNSSOA {
     mname: DNSName,
     rname: DNSName,
@@ -21,7 +21,7 @@ pub struct DNSSOA {
     minimum: u32,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Debug, Serialize)]
 pub enum DNSRecordData {
     Empty,
     A(IPv4Address),
@@ -44,7 +44,7 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
     udp::register_app(53, DNS::creator)
 }
 
-#[derive(Default, Clone)]
+#[derive(Default)]
 pub struct DNSName(Vec<u8>);
 
 impl fmt::Display for DNSName {
@@ -80,7 +80,7 @@ impl Serialize for DNSName {
     }
 }
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Serialize)]
 pub struct DNSQRecord {
     name: DNSName,
     #[serde(rename = "type")]
@@ -88,7 +88,7 @@ pub struct DNSQRecord {
     class: u16,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Serialize)]
 pub struct DNSResRecord {
     name: DNSName,
     #[serde(rename = "type")]
@@ -99,7 +99,7 @@ pub struct DNSResRecord {
     rdata: DNSRecordData,
 }
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Serialize)]
 pub struct DNS {
     #[serde(serialize_with = "crate::types::hex::serialize_lower_hex_u16")]
     id: u16,

@@ -45,7 +45,7 @@ pub fn register_app(port: u16, app: LayerCreatorFn) -> Result<(), Error> {
     Ok(())
 }
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Serialize)]
 pub struct TCP {
     src_port: u16,
     dst_port: u16,

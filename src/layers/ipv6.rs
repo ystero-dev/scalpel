@@ -44,7 +44,7 @@ pub fn register_next_header(header: u8, creator: LayerCreatorFn) -> Result<(), E
     Ok(())
 }
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Serialize)]
 pub struct IPv6 {
     version: u8,
     traffic_class: u8,

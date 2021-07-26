@@ -44,7 +44,7 @@ pub fn register_app(port: u16, app: LayerCreatorFn) -> Result<(), Error> {
     Ok(())
 }
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Serialize)]
 struct UDP {
     src_port: u16,
     dst_port: u16,

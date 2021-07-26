@@ -43,7 +43,7 @@ pub fn register_protocol(proto: u8, creator: LayerCreatorFn) -> Result<(), Error
     Ok(())
 }
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Serialize)]
 pub struct IPv4 {
     version: u8,
     hdr_len: u8,

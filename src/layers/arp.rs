@@ -17,7 +17,7 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
     ethernet::register_ethertype(ETHERTYPE_ARP, ARP::creator)
 }
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Serialize)]
 struct ARP {
     #[serde(serialize_with = "crate::types::hex::serialize_upper_hex_u16")]
     htype: u16,
