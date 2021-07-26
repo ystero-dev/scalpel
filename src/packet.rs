@@ -210,7 +210,6 @@ mod tests {
 
         let array = hex::decode("000573a007d168a3c4f949f686dd600000000020064020010470e5bfdead49572174e82c48872607f8b0400c0c03000000000000001af9c7001903a088300000000080022000da4700000204058c0103030801010402");
         assert!(array.is_ok());
-        assert!(true);
 
         let array = array.unwrap();
         let len = array.len();

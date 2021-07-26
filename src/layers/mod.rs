@@ -11,4 +11,6 @@ pub mod dns;
 
 pub mod arp;
 
+pub mod sctp;
+
 include!(concat!(env!("OUT_DIR"), "/register_defaults.rs"));
