@@ -40,4 +40,12 @@ fn main() {
     let p = scalpel::packet::Packet::from_u8(&dns_packet, scalpel::types::ENCAP_TYPE_ETH);
 
     println!("{}", serde_json::to_string_pretty(&p.unwrap()).unwrap());
+
+    let sctp_packet = hex::decode(
+    "00005096523a0026cb39f4c00800450000a8da490000fa844bf6585206860aad300d189f0b5add68d33d0f7373ab030000100629beaa0000fa000000000000030028d42b4897000000050000000301000202000000180012000800000a43000600080000045600030028d42b4898000000060000000301000202000000180012000800000a42000600080000045600030028d42b4899000000070000000301000202000000180012000800000fa20006000800000456");
+
+    let sctp_packet = sctp_packet.unwrap();
+    let p = scalpel::packet::Packet::from_u8(&sctp_packet, scalpel::types::ENCAP_TYPE_ETH);
+
+    println!("{}", serde_json::to_string_pretty(&p.unwrap()).unwrap());
 }

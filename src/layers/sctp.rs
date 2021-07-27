@@ -12,20 +12,35 @@ use crate::layer::Layer;
 use crate::layers::{ipv4, ipv6};
 
 lazy_static! {
-    // FIXME : Ugly hack because `serde serialize_field does not accept anything other than static
-    static ref CHUNK_DISPLAY_MAP: HashMap<usize, &'static str> = {
+    // A Map of Chunk Type to Display String
+    static ref CHUNK_DISPLAY_MAP: HashMap<u8, &'static str> = {
         let mut m = HashMap::new();
-        m.insert(0, "# 1");
-        m.insert(1, "# 2");
-        m.insert(2, "# 3");
-        m.insert(3, "# 4");
-        m.insert(4, "# 5");
-        m.insert(5, "# 6");
-        m.insert(6, "# 7");
-        m.insert(7, "# 8");
+        m.insert(0, "DATA Chunk");
+        m.insert(1, "INIT Chunk");
+        m.insert(2, "INIT-ACK Chunk");
+        m.insert(3, "SACK Chunk");
+        m.insert(4, "HEARTBEAT Chunk");
+        m.insert(5, "HEARTBEAT-ACK Chunk");
+        m.insert(6, "ABORT Chunk");
+        m.insert(7, "SHUTDOWN Chunk");
+        m.insert(8, "SHUTDOWN-ACK Chunk");
+        m.insert(9, "ERROR Chunk");
+        m.insert(10, "COOKIE-ECHO Chunk");
+        m.insert(11, "COOKIE-ACK Chunk");
+        m.insert(12, "ECNE Chunk");
+        m.insert(13, "CWR Chunk");
+        m.insert(14, "SHUTDOWN_COMPLETE Chunk");
+        m.insert(15, "AUTH Chunk");
+        m.insert(64, "I-DATA Chunk");
+        m.insert(128, "ASCONF-ACK Chunk");
+        m.insert(130, "RE-CONFIG Chunk");
+        m.insert(132, "PAD Chunk");
+        m.insert(192, "FORWARD-TSN Chunk");
+        m.insert(193, "ASCONF Chunk");
+        m.insert(195, "I-FORWARD-TSN Chunk");
         m
     };
-    static ref HIGHER_CHUNK: &'static str = "# ##";
+    static ref UNKNOWN_CHUNK_TYPE: &'static str = "Unknown Chunk";
 }
 /// SCTP Protocol Number
 pub const IPPROTO_SCTP: u8 = 132_u8;
@@ -41,6 +56,7 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
 #[allow(dead_code)]
 #[derive(Debug, Serialize)]
 enum ChunkPayload {
+    #[serde(serialize_with = "hex::serde::serialize")]
     UnProcessed(Vec<u8>),
 
     #[serde(serialize_with = "serialize_sctp_chunk_layer")]
@@ -66,11 +82,45 @@ impl Default for ChunkPayload {
 }
 
 #[derive(Debug, Default, Serialize)]
-struct SCTPChunk {
+struct SCTPChunkHeader {
     chunk_type: u8,
     chunk_flags: u8,
     chunk_len: u16,
-    payload: ChunkPayload,
+}
+
+#[derive(Debug, Serialize)]
+enum SCTPChunk {
+    Data {
+        header: SCTPChunkHeader,
+        tsn: u32,
+        stream_id: u16,
+        stream_seq_no: u16,
+        payload_proto: u32,
+        payload: ChunkPayload,
+    },
+    Unsupported {
+        header: SCTPChunkHeader,
+        payload: ChunkPayload,
+    },
+}
+
+impl SCTPChunk {
+    #[inline(always)]
+    fn chunk_type(&self) -> u8 {
+        match self {
+            Self::Data { ref header, .. } => header.chunk_type,
+            Self::Unsupported { ref header, .. } => header.chunk_type,
+        }
+    }
+}
+
+impl Default for SCTPChunk {
+    fn default() -> Self {
+        Self::Unsupported {
+            header: SCTPChunkHeader::default(),
+            payload: ChunkPayload::default(),
+        }
+    }
 }
 
 fn serialize_sctp_chunks<S>(
@@ -81,8 +131,13 @@ where
     S: Serializer,
 {
     let mut state = serializer.serialize_struct("chunks", chunks.len())?;
-    for (idx, chunk) in chunks.iter().enumerate() {
-        state.serialize_field(CHUNK_DISPLAY_MAP.get(&idx).unwrap_or(&HIGHER_CHUNK), chunk)?;
+    for chunk in chunks {
+        state.serialize_field(
+            CHUNK_DISPLAY_MAP
+                .get(&chunk.chunk_type())
+                .unwrap_or(&UNKNOWN_CHUNK_TYPE),
+            chunk,
+        )?;
     }
     state.end()
 }
@@ -102,6 +157,85 @@ impl SCTP {
     pub fn creator() -> Box<dyn Layer> {
         Box::new(SCTP::default())
     }
+
+    fn process_chunk_header(bytes: &[u8]) -> Result<SCTPChunkHeader, Error> {
+        if bytes.len() < 4 {
+            return Err(Error::TooShort);
+        }
+
+        let chunk_type = bytes[0];
+        let chunk_flags = bytes[1];
+        let chunk_len = (bytes[2] as u16) | (bytes[3] as u16);
+
+        Ok(SCTPChunkHeader {
+            chunk_type,
+            chunk_flags,
+            chunk_len,
+        })
+    }
+
+    fn process_data_chunk(bytes: &[u8]) -> Result<(SCTPChunk, usize), Error> {
+        let mut start = 0;
+
+        let header = SCTP::process_chunk_header(&bytes[start..])?;
+        start += 4;
+
+        let tsn = u32::from_be_bytes(bytes[start..start + 4].try_into().unwrap())
+            .try_into()
+            .unwrap();
+        start += 4;
+
+        let stream_id = (bytes[start] as u16) | (bytes[start + 1] as u16);
+        start += 2;
+
+        let stream_seq_no = (bytes[start] as u16) | (bytes[start + 1] as u16);
+        start += 2;
+
+        let payload_proto = u32::from_be_bytes(bytes[start..start + 4].try_into().unwrap())
+            .try_into()
+            .unwrap();
+        start += 4;
+
+        let payload: Vec<u8> = bytes[start..start + header.chunk_len as usize - 16].into();
+        // FIXME: Add support for Layers here.
+        let payload = ChunkPayload::UnProcessed(payload);
+
+        let chunk_len = header.chunk_len as usize;
+        Ok((
+            SCTPChunk::Data {
+                header,
+                tsn,
+                stream_id,
+                stream_seq_no,
+                payload_proto,
+                payload,
+            },
+            chunk_len,
+        ))
+    }
+
+    fn process_unsupported_chunk(bytes: &[u8]) -> Result<(SCTPChunk, usize), Error> {
+        let mut start = 0;
+
+        let header = SCTP::process_chunk_header(&bytes[start..])?;
+        start += 4;
+
+        let payload: Vec<u8> = bytes[start..start + header.chunk_len as usize - 4].into();
+        // FIXME: Add support for Layers here.
+        let payload = ChunkPayload::UnProcessed(payload);
+
+        let chunk_len = header.chunk_len as usize;
+        Ok((SCTPChunk::Unsupported { header, payload }, chunk_len))
+    }
+
+    fn process_sctp_chunk(bytes: &[u8]) -> Result<(SCTPChunk, usize), Error> {
+        let chunk_type = bytes[0];
+
+        match chunk_type {
+            0 => SCTP::process_data_chunk(bytes),
+            _ => SCTP::process_unsupported_chunk(bytes),
+        }
+    }
 }
 
 impl Layer for SCTP {
@@ -118,21 +252,10 @@ impl Layer for SCTP {
         let mut chunks = vec![];
         let mut start = 12;
         loop {
-            let chunk_type = bytes[start];
-            start += 1;
-            let chunk_flags = bytes[start];
-            start += 1;
-            let chunk_len = (bytes[start] as u16) << 8 | (bytes[start + 1] as u16);
-            start += 2;
-            let payload: Vec<u8> = bytes[start + 2..start + chunk_len as usize - 4].into();
-            start += chunk_len as usize - 4;
+            let (chunk, chunk_consumed) = SCTP::process_sctp_chunk(&bytes[start..])?;
+            start += chunk_consumed;
 
-            chunks.push(SCTPChunk {
-                chunk_type,
-                chunk_flags,
-                chunk_len,
-                payload: ChunkPayload::UnProcessed(payload),
-            });
+            chunks.push(chunk);
             if start >= bytes.len() {
                 break;
             }
