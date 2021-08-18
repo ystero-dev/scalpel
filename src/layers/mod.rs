@@ -13,4 +13,5 @@ pub mod arp;
 
 pub mod sctp;
 
+pub mod m3ua;
 include!(concat!(env!("OUT_DIR"), "/register_defaults.rs"));

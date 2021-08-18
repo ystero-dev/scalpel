@@ -142,8 +142,8 @@ criterion_group!(
     // case. That makes the 'gopacket' benchmark look faster. But if we run the 'full' packet
     // decode benchmark our benchmark is fast as seen with other benchmarks.
     new_dns_aaaa_from_u8,
-    new_dns_packet_from_u8,
-    bench_dns_gopacket_regression,
-    bench_dns_serde_json
+    //new_dns_packet_from_u8,
+    //bench_dns_gopacket_regression,
+    //bench_dns_serde_json
 );
 criterion_main!(dns);

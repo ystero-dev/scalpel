@@ -2,12 +2,14 @@
 use core::convert::TryInto;
 
 use std::collections::HashMap;
+use std::sync::RwLock;
 
 use lazy_static::lazy_static;
 use serde::{ser::SerializeStruct, Serialize, Serializer};
 
 use crate::errors::Error;
 use crate::layer::Layer;
+use crate::types::LayerCreatorFn;
 
 use crate::layers::{ipv4, ipv6};
 
@@ -41,9 +43,25 @@ lazy_static! {
         m
     };
     static ref UNKNOWN_CHUNK_TYPE: &'static str = "Unknown Chunk";
+
+    static ref PROTOCOLS_MAP: RwLock<HashMap<u32, LayerCreatorFn>> = RwLock::new(HashMap::new());
 }
+
 /// SCTP Protocol Number
 pub const IPPROTO_SCTP: u8 = 132_u8;
+
+/// For Registering Data Chunk Protocols with Us.
+///
+/// This will be used by M3UA (say)
+pub fn register_datachunk_protocol(proto: u32, creator: LayerCreatorFn) -> Result<(), Error> {
+    let mut map = PROTOCOLS_MAP.write().unwrap();
+    if map.contains_key(&proto) {
+        return Err(Error::RegisterError);
+    }
+    map.insert(proto, creator);
+
+    Ok(())
+}
 
 // Register ourselves With IPv4 and IPv6
 pub(crate) fn register_defaults() -> Result<(), Error> {
@@ -108,8 +126,9 @@ impl SCTPChunk {
     #[inline(always)]
     fn chunk_type(&self) -> u8 {
         match self {
-            Self::Data { ref header, .. } => header.chunk_type,
-            Self::Unsupported { ref header, .. } => header.chunk_type,
+            Self::Data { ref header, .. } | Self::Unsupported { ref header, .. } => {
+                header.chunk_type
+            }
         }
     }
 }
@@ -196,9 +215,19 @@ impl SCTP {
             .unwrap();
         start += 4;
 
-        let payload: Vec<u8> = bytes[start..start + header.chunk_len as usize - 16].into();
-        // FIXME: Add support for Layers here.
-        let payload = ChunkPayload::UnProcessed(payload);
+        let map = PROTOCOLS_MAP.read().unwrap();
+        let layer_creator = map.get(&payload_proto);
+        let payload = if layer_creator.is_none() {
+            let payload: Vec<u8> = bytes[start..start + header.chunk_len as usize - 16].into();
+
+            ChunkPayload::UnProcessed(payload)
+        } else {
+            let layer_creator = layer_creator.unwrap();
+            let mut layer = layer_creator();
+            let (_, _processed) = layer.from_u8(&bytes[start..])?;
+
+            ChunkPayload::Processed(layer)
+        };
 
         let chunk_len = header.chunk_len as usize;
         Ok((
@@ -221,7 +250,6 @@ impl SCTP {
         start += 4;
 
         let payload: Vec<u8> = bytes[start..start + header.chunk_len as usize - 4].into();
-        // FIXME: Add support for Layers here.
         let payload = ChunkPayload::UnProcessed(payload);
 
         let chunk_len = header.chunk_len as usize;
@@ -276,8 +304,6 @@ impl Layer for SCTP {
 #[cfg(test)]
 mod tests {
 
-    use super::*;
-
     use crate::layers;
     use crate::packet::Packet;
     use crate::types::ENCAP_TYPE_ETH;
@@ -290,7 +316,6 @@ mod tests {
         assert!(array.is_ok());
 
         let array = array.unwrap();
-        let len = array.len();
         let p = Packet::from_u8(&array, ENCAP_TYPE_ETH);
         assert!(p.is_ok(), "{:?}", p.err());
 
