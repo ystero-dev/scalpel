@@ -153,6 +153,20 @@ impl Packet {
 }
 
 // Python Bindings
+#[pymethods]
+impl Packet {
+    #[staticmethod]
+    fn from_u8_py(bytes: &[u8], encap: EncapType) -> PyResult<Self> {
+        let _ = crate::layers::register_defaults();
+
+        Self::from_u8(bytes, encap).map_err(|e| e.into())
+    }
+
+    fn as_json(&self) -> PyResult<String> {
+        Ok(serde_json::to_string_pretty(self).unwrap())
+    }
+}
+
 pub(crate) fn register(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<Packet>()?;
     Ok(())
