@@ -18,7 +18,7 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
 }
 
 #[derive(Debug, Default, Serialize)]
-struct ARP {
+pub struct ARP {
     #[serde(serialize_with = "crate::types::hex::serialize_upper_hex_u16")]
     htype: u16,
     #[serde(serialize_with = "crate::types::hex::serialize_upper_hex_u16")]

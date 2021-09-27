@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 use lazy_static::lazy_static;
-use serde::{ser::SerializeStruct, Serialize, Serializer};
+use serde::{ser::SerializeStruct as _, Serialize, Serializer};
 
 use crate::errors::Error;
 use crate::layer::Layer;
@@ -162,7 +162,7 @@ where
 }
 
 #[derive(Debug, Default, Serialize)]
-struct SCTP {
+pub struct SCTP {
     src_port: u16,
     dst_port: u16,
     verification_tag: u32,

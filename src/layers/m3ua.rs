@@ -19,7 +19,7 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
 }
 
 #[derive(Debug, Default, Serialize)]
-struct M3UA {
+pub struct M3UA {
     version: u8,
     reserved: u8,
     msg_class: u8,
