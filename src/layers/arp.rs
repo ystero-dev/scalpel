@@ -33,13 +33,13 @@ pub struct ARP {
 }
 
 impl ARP {
-    pub fn creator() -> Box<dyn Layer> {
+    pub fn creator() -> Box<dyn Layer + Send> {
         Box::new(ARP::default())
     }
 }
 
 impl Layer for ARP {
-    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
+    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         if bytes.len() < ARP_HDR_LENGTH {
             return Err(Error::ParseError);
         }

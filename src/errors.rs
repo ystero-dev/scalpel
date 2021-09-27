@@ -19,3 +19,13 @@ impl core::fmt::Display for Error {
         write!(f, "Error")
     }
 }
+
+use pyo3;
+
+// Python Bindings
+impl std::convert::From<Error> for pyo3::PyErr {
+    // TODO: Add proper error reporting
+    fn from(_e: Error) -> pyo3::PyErr {
+        pyo3::exceptions::PyValueError::new_err("Error")
+    }
+}

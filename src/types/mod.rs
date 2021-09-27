@@ -14,7 +14,7 @@ pub use ipaddr::*;
 pub mod hex;
 
 /// Type for a 'Layer' creator function.
-pub type LayerCreatorFn = fn() -> Box<dyn Layer>;
+pub type LayerCreatorFn = fn() -> Box<dyn Layer + Send>;
 
 /// Packet Encapsulation Type
 ///

@@ -26,3 +26,12 @@ pub mod packet;
 pub mod layer;
 
 pub mod types;
+
+use pyo3::prelude::*;
+
+/// Python bindings for packet dissection and sculpting in Rust (scalpel)
+#[pymodule]
+fn scalpel(py: Python, m: &PyModule) -> PyResult<()> {
+    packet::register(py, m)?;
+    Ok(())
+}

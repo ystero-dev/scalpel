@@ -31,13 +31,13 @@ pub struct M3UA {
 }
 
 impl M3UA {
-    pub fn creator() -> Box<dyn Layer> {
+    pub fn creator() -> Box<dyn Layer + Send> {
         Box::new(M3UA::default())
     }
 }
 
 impl Layer for M3UA {
-    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
+    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         if bytes.len() < 8 {
             return Err(Error::TooShort);
         }

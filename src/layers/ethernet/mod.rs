@@ -56,13 +56,13 @@ pub struct Ethernet {
 }
 
 impl Ethernet {
-    pub fn creator() -> Box<dyn Layer> {
+    pub fn creator() -> Box<dyn Layer + Send> {
         Box::new(Ethernet::default())
     }
 }
 
 impl Layer for Ethernet {
-    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
+    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         if bytes.len() < ETH_HEADER_LEN {
             return Err(Error::TooShort);
         }

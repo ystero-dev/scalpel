@@ -10,7 +10,7 @@ use erased_serde::serialize_trait_object;
 
 use crate::errors::Error;
 
-pub trait Layer: Debug + erased_serde::Serialize {
+pub trait Layer: Send + Debug + erased_serde::Serialize {
     /// Basic 'decoder' function.
     ///
     /// The return value is a Tuple (`Option<Box<dyn Error>>`, usize)` on success. This indicates
@@ -20,7 +20,7 @@ pub trait Layer: Debug + erased_serde::Serialize {
     /// number of bytes consumed by the 'decoder' function. A return value of `None` indicates,
     /// we do not know how to decode further, but this is not an error. This might happen for
     /// example for protocols that are not yet supported.
-    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error>;
+    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error>;
 
     /// Name for the given layer.
     fn name(&self) -> &'static str;
@@ -41,7 +41,7 @@ serialize_trait_object!(Layer);
 pub struct EmptyLayer;
 
 impl Layer for EmptyLayer {
-    fn from_u8(&mut self, _btes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
+    fn from_u8(&mut self, _btes: &[u8]) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         Ok((Some(Box::new(EmptyLayer {})), 0))
     }
 

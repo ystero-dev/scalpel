@@ -57,13 +57,13 @@ pub struct IPv6 {
 }
 
 impl IPv6 {
-    pub fn creator() -> Box<dyn Layer> {
+    pub fn creator() -> Box<dyn Layer + Send> {
         Box::new(IPv6::default())
     }
 }
 
 impl Layer for IPv6 {
-    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
+    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         if bytes.len() < IPV6_BASE_HDR_LEN {
             return Err(Error::ParseError);
         }
