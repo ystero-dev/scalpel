@@ -78,11 +78,11 @@ enum ChunkPayload {
     UnProcessed(Vec<u8>),
 
     #[serde(serialize_with = "serialize_sctp_chunk_layer")]
-    Processed(Box<dyn Layer>),
+    Processed(Box<dyn Layer + Send>),
 }
 
 fn serialize_sctp_chunk_layer<S>(
-    chunk_layer: &Box<dyn Layer>,
+    chunk_layer: &Box<dyn Layer + Send>,
     serializer: S,
 ) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
 where
@@ -173,7 +173,7 @@ pub struct SCTP {
 }
 
 impl SCTP {
-    pub fn creator() -> Box<dyn Layer> {
+    pub fn creator() -> Box<dyn Layer + Send> {
         Box::new(SCTP::default())
     }
 
@@ -267,7 +267,7 @@ impl SCTP {
 }
 
 impl Layer for SCTP {
-    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
+    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         self.src_port = (bytes[0] as u16) << 8 | (bytes[1] as u16);
         self.dst_port = (bytes[2] as u16) << 8 | (bytes[3] as u16);
         self.verification_tag = u32::from_be_bytes(bytes[4..8].try_into().unwrap())

@@ -14,6 +14,8 @@ use crate::errors::Error;
 use crate::layer::{EmptyLayer, Layer};
 use crate::types::{EncapType, LayerCreatorFn, ENCAP_TYPE_ETH};
 
+use pyo3::prelude::*;
+
 lazy_static! {
     static ref ENCAP_TYPES_MAP: RwLock<HashMap<EncapType, LayerCreatorFn>> =
         RwLock::new(HashMap::new());
@@ -37,13 +39,12 @@ struct Timestamp {
 ///              Each of the following is a Layer - `Ethernet`, `IPv4`, `TCP` etc.
 ///  * `unprocessed`: The partof the original byte-stream that is not processed and captured into
 ///                   `layers` above.
+#[pyclass]
 #[derive(Debug, Default, Serialize)]
-pub struct Packet<'a> {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub data: Option<&'a [u8]>,
+pub struct Packet {
     pub meta: PacketMetadata,
     #[serde(serialize_with = "serialize_layers_as_struct")]
-    pub layers: Vec<Box<dyn Layer>>,
+    pub layers: Vec<Box<dyn Layer + Send>>,
     #[serde(
         skip_serializing_if = "Vec::is_empty",
         serialize_with = "hex::serde::serialize"
@@ -52,7 +53,7 @@ pub struct Packet<'a> {
 }
 
 fn serialize_layers_as_struct<S>(
-    layers: &Vec<Box<dyn Layer>>,
+    layers: &Vec<Box<dyn Layer + Send>>,
     serializer: S,
 ) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
 where
@@ -78,7 +79,7 @@ pub struct PacketMetadata {
     caplen: u16,
 }
 
-impl<'a> Packet<'a> {
+impl Packet {
     /// Register a new Layer 2 encoding
     ///
     /// In order to dissect bytes on wire into a [`Packet`] structure, the right encoding needs to
@@ -100,10 +101,10 @@ impl<'a> Packet<'a> {
     /// This is the main 'decoder' function. An application would typically call `Packet::from_u8`.
     /// This would then return a [`Packet`] structure. The application can then perform actions if
     /// any on the returned structure.
-    pub fn from_u8(bytes: &'a [u8], encap: EncapType) -> Result<Self, Error> {
+    pub fn from_u8(bytes: &[u8], encap: EncapType) -> Result<Self, Error> {
         let mut p = Packet::default();
 
-        let l2: Box<dyn Layer>;
+        let l2: Box<dyn Layer + Send>;
         {
             let map = ENCAP_TYPES_MAP.read().unwrap();
             let creator_fn = map.get(&encap);
@@ -117,8 +118,8 @@ impl<'a> Packet<'a> {
             l2 = creator_fn.unwrap()();
         }
 
-        let layer: RefCell<Box<dyn Layer>> = RefCell::new(l2);
-        let mut res: (Option<Box<dyn Layer>>, usize);
+        let layer: RefCell<Box<dyn Layer + Send>> = RefCell::new(l2);
+        let mut res: (Option<Box<dyn Layer + Send>>, usize);
         let mut start = 0;
         loop {
             {
@@ -149,6 +150,12 @@ impl<'a> Packet<'a> {
         }
         Ok(p)
     }
+}
+
+// Python Bindings
+pub(crate) fn register(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_class::<Packet>()?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -234,16 +241,16 @@ mod tests {
         let _ = layers::register_defaults();
 
         let dns_query = vec![
-	0xfe, 0x54, 0x00, 0x3e, 0x00, 0x96, 0x52, 0x54, /* .T.>..RT */
-	0x00, 0xbd, 0x1c, 0x70, 0x08, 0x00, 0x45, 0x00, /* ...p..E. */
-	0x00, 0x3c, 0x22, 0xe0, 0x00, 0x00, 0x40, 0x11, /* .<"...@. */
-	0xe2, 0x38, 0xc0, 0xa8, 0x7a, 0x46, 0xc0, 0xa8, /* .8..zF.. */
-	0x7a, 0x01, 0xc3, 0x35, 0x00, 0x35, 0x00, 0x28, /* z..5.5.( */
-	0x75, 0xd2, 0x52, 0x41, 0x01, 0x00, 0x00, 0x01, /* u.RA.... */
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x77, /* .......w */
-	0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, /* ww.googl */
-	0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, /* e.com... */
-	0x00, 0x01, /* .. */
+            0xfe, 0x54, 0x00, 0x3e, 0x00, 0x96, 0x52, 0x54, /* .T.>..RT */
+            0x00, 0xbd, 0x1c, 0x70, 0x08, 0x00, 0x45, 0x00, /* ...p..E. */
+            0x00, 0x3c, 0x22, 0xe0, 0x00, 0x00, 0x40, 0x11, /* .<"...@. */
+            0xe2, 0x38, 0xc0, 0xa8, 0x7a, 0x46, 0xc0, 0xa8, /* .8..zF.. */
+            0x7a, 0x01, 0xc3, 0x35, 0x00, 0x35, 0x00, 0x28, /* z..5.5.( */
+            0x75, 0xd2, 0x52, 0x41, 0x01, 0x00, 0x00, 0x01, /* u.RA.... */
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x77, /* .......w */
+            0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, /* ww.googl */
+            0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, /* e.com... */
+            0x00, 0x01, /* .. */
         ];
 
         let p = Packet::from_u8(&dns_query, ENCAP_TYPE_ETH);

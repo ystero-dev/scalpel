@@ -53,13 +53,13 @@ pub struct UDP {
 }
 
 impl UDP {
-    pub fn creator() -> Box<dyn Layer> {
+    pub fn creator() -> Box<dyn Layer + Send> {
         Box::new(UDP::default())
     }
 }
 
 impl Layer for UDP {
-    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
+    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         if bytes.len() < UDP_HDR_LEN {
             return Err(Error::TooShort);
         }

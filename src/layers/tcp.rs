@@ -61,13 +61,13 @@ pub struct TCP {
 }
 
 impl TCP {
-    pub fn creator() -> Box<dyn Layer> {
+    pub fn creator() -> Box<dyn Layer + Send> {
         Box::new(TCP::default())
     }
 }
 
 impl Layer for TCP {
-    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
+    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         if bytes.len() < TCP_BASE_HDR_LEN {
             return Err(Error::TooShort);
         }

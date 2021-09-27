@@ -122,7 +122,7 @@ pub struct DNS {
 }
 
 impl DNS {
-    pub fn creator() -> Box<dyn Layer> {
+    pub fn creator() -> Box<dyn Layer + Send> {
         Box::new(DNS::default())
     }
 
@@ -342,7 +342,7 @@ impl DNS {
 }
 
 impl Layer for DNS {
-    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer>>, usize), Error> {
+    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         let mut decoded;
 
         if bytes.len() < 12 {
