@@ -62,7 +62,10 @@ impl Ethernet {
 }
 
 impl Layer for Ethernet {
-    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
+    fn from_bytes(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         if bytes.len() < ETH_HEADER_LEN {
             return Err(Error::TooShort);
         }

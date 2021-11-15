@@ -6,7 +6,7 @@ use scalpel::layers::register_defaults;
 use scalpel::packet::Packet;
 use scalpel::types::ENCAP_TYPE_ETH;
 
-pub fn new_dns_packet_from_u8(c: &mut Criterion) {
+pub fn new_dns_packet_from_bytes(c: &mut Criterion) {
     // Benchmark Taken from the 'gopacket' Go package.
     let dns_query = vec![
 	0xfe, 0x54, 0x00, 0x3e, 0x00, 0x96, 0x52, 0x54, /* .T.>..RT */
@@ -21,11 +21,11 @@ pub fn new_dns_packet_from_u8(c: &mut Criterion) {
 	0x00, 0x01, /* .. */];
     let _ = register_defaults();
     c.bench_function("Parse_DNS", |b| {
-        b.iter(|| Packet::from_u8(&dns_query, ENCAP_TYPE_ETH))
+        b.iter(|| Packet::from_bytes(&dns_query, ENCAP_TYPE_ETH))
     });
 }
 
-pub fn new_dns_aaaa_from_u8(c: &mut Criterion) {
+pub fn new_dns_aaaa_from_bytes(c: &mut Criterion) {
     // Benchmark Taken from the 'gopacket' Go package.
     let test_dns_aaaa = vec![
 	0x52, 0x54, 0x00, 0xbd, 0x1c, 0x70, 0xfe, 0x54, /* RT...p.T */
@@ -62,7 +62,7 @@ pub fn new_dns_aaaa_from_u8(c: &mut Criterion) {
     let _ = register_defaults();
     c.bench_function("Parse_DNS_AAAA", |b| {
         let mut dns: Box<dyn Layer> = Box::new(DNS::default());
-        b.iter(|| dns.from_u8(&test_dns_aaaa[42..]));
+        b.iter(|| dns.from_bytes(&test_dns_aaaa[42..]));
     });
 }
 
@@ -87,7 +87,7 @@ pub fn bench_dns_gopacket_regression(c: &mut Criterion) {
     ];
     let _ = register_defaults();
     c.bench_function("Parse_DNS_Regression_Packet", |b| {
-        b.iter(|| Packet::from_u8(&test_packet_dns_regression, ENCAP_TYPE_ETH))
+        b.iter(|| Packet::from_bytes(&test_packet_dns_regression, ENCAP_TYPE_ETH))
     });
 }
 
@@ -128,7 +128,7 @@ pub fn bench_dns_serde_json(c: &mut Criterion) {
     let _ = register_defaults();
     c.bench_function("Json_Serialize_DNS_AAAA", |b| {
         b.iter(|| {
-            let p = Packet::from_u8(&test_dns_aaaa, ENCAP_TYPE_ETH).unwrap();
+            let p = Packet::from_bytes(&test_dns_aaaa, ENCAP_TYPE_ETH).unwrap();
             let _ = serde_json::to_string(&p).unwrap();
         })
     });
@@ -141,9 +141,9 @@ criterion_group!(
     // struct is (and internal vectors are) allocated only once per benchmark. That is not the
     // case. That makes the 'gopacket' benchmark look faster. But if we run the 'full' packet
     // decode benchmark our benchmark is fast as seen with other benchmarks.
-    new_dns_aaaa_from_u8,
-    //new_dns_packet_from_u8,
-    //bench_dns_gopacket_regression,
-    //bench_dns_serde_json
+    new_dns_aaaa_from_bytes,
+    new_dns_packet_from_bytes,
+    bench_dns_gopacket_regression,
+    bench_dns_serde_json
 );
 criterion_main!(dns);

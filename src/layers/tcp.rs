@@ -67,7 +67,10 @@ impl TCP {
 }
 
 impl Layer for TCP {
-    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
+    fn from_bytes(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         if bytes.len() < TCP_BASE_HDR_LEN {
             return Err(Error::TooShort);
         }

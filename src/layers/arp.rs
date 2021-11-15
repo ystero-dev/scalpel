@@ -39,7 +39,10 @@ impl ARP {
 }
 
 impl Layer for ARP {
-    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
+    fn from_bytes(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         if bytes.len() < ARP_HDR_LENGTH {
             return Err(Error::ParseError);
         }
@@ -81,7 +84,7 @@ mod tests {
         assert!(array.is_ok());
         let array = array.unwrap();
 
-        let p = Packet::from_u8(&array, ENCAP_TYPE_ETH);
+        let p = Packet::from_bytes(&array, ENCAP_TYPE_ETH);
         assert!(p.is_ok(), "{:?}", p.err());
 
         let p = p.unwrap();

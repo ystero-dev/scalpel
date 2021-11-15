@@ -128,7 +128,7 @@ impl DNS {
 
     // A Name needs to be dissected recursively by looking at previous occurence of a name
     // See https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.4
-    fn dns_name_from_u8(
+    fn dns_name_from_bytes(
         bytes: &[u8],
         start: usize,
         remaining: usize,
@@ -195,14 +195,14 @@ impl DNS {
         Ok((DNSName(labels), consumed))
     }
 
-    fn dns_resrecord_from_u8(
+    fn dns_resrecord_from_bytes(
         bytes: &[u8],
         start: usize,
         mut remaining: usize,
     ) -> Result<(DNSResRecord, usize), Error> {
         let mut i = 0;
         let mut offset = start;
-        let (name, consumed) = Self::dns_name_from_u8(bytes, start, remaining)?;
+        let (name, consumed) = Self::dns_name_from_bytes(bytes, start, remaining)?;
 
         i += consumed;
         remaining -= consumed;
@@ -232,15 +232,15 @@ impl DNS {
             1 => DNSRecordData::A(rdata_buffer.try_into().unwrap()), /* A */
             28 => DNSRecordData::AAAA(rdata_buffer.try_into().unwrap()), /* AAAA */
             2 | 3 | 4 | 5 | 7 | 8 | 9 => {
-                let (name, _) = Self::dns_name_from_u8(bytes, i, remaining)?;
+                let (name, _) = Self::dns_name_from_bytes(bytes, i, remaining)?;
                 DNSRecordData::CNAME(name)
             }
             6 => {
                 // FIXME: into an inline function?
-                let (mname, consumed) = Self::dns_name_from_u8(bytes, i, remaining)?;
+                let (mname, consumed) = Self::dns_name_from_bytes(bytes, i, remaining)?;
                 i += consumed;
                 remaining -= consumed;
-                let (rname, consumed) = Self::dns_name_from_u8(bytes, i, remaining)?;
+                let (rname, consumed) = Self::dns_name_from_bytes(bytes, i, remaining)?;
                 i += consumed;
                 remaining -= consumed;
                 if remaining < 20 {
@@ -295,12 +295,12 @@ impl DNS {
         ))
     }
 
-    fn records_from_u8(&mut self, bytes: &[u8], mut remaining: usize) -> Result<usize, Error> {
+    fn records_from_bytes(&mut self, bytes: &[u8], mut remaining: usize) -> Result<usize, Error> {
         let mut i = 0;
 
         // First questions
         for _ in 0..self.qdcount {
-            let (name, consumed) = Self::dns_name_from_u8(bytes, i, remaining)?;
+            let (name, consumed) = Self::dns_name_from_bytes(bytes, i, remaining)?;
 
             i += consumed;
             remaining -= consumed;
@@ -314,7 +314,7 @@ impl DNS {
         }
 
         for _ in 0..self.ancount {
-            let (record, consumed) = Self::dns_resrecord_from_u8(bytes, i, remaining)?;
+            let (record, consumed) = Self::dns_resrecord_from_bytes(bytes, i, remaining)?;
 
             i += consumed;
             remaining -= consumed;
@@ -322,7 +322,7 @@ impl DNS {
         }
 
         for _ in 0..self.nscount {
-            let (record, consumed) = Self::dns_resrecord_from_u8(bytes, i, remaining)?;
+            let (record, consumed) = Self::dns_resrecord_from_bytes(bytes, i, remaining)?;
 
             i += consumed;
             remaining -= consumed;
@@ -330,7 +330,7 @@ impl DNS {
         }
 
         for _ in 0..self.arcount {
-            let (record, consumed) = Self::dns_resrecord_from_u8(bytes, i, remaining)?;
+            let (record, consumed) = Self::dns_resrecord_from_bytes(bytes, i, remaining)?;
 
             i += consumed;
             remaining -= consumed;
@@ -342,7 +342,10 @@ impl DNS {
 }
 
 impl Layer for DNS {
-    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
+    fn from_bytes(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         let mut decoded;
 
         if bytes.len() < 12 {
@@ -372,7 +375,7 @@ impl Layer for DNS {
         decoded = 12;
 
         let remaining = bytes.len() - 12;
-        let record_bytes = self.records_from_u8(&bytes[decoded..], remaining)?;
+        let record_bytes = self.records_from_bytes(&bytes[decoded..], remaining)?;
         decoded += record_bytes;
 
         Ok((None, decoded))
@@ -431,10 +434,9 @@ mod tests {
             0x00, 0x04, 0xd8, 0xef, 0x26, 0x0a, /* ....&. */
         ];
 
-        //let p = Packet::from_u8(&dns_query, ENCAP_TYPE_ETH);
         let mut dns: Box<dyn crate::layer::Layer> = Box::new(super::DNS::default());
 
-        let p = dns.from_u8(&dns_query[42..]);
+        let p = dns.from_bytes(&dns_query[42..]);
         assert!(p.is_ok(), "{:#?}", dns);
     }
 
@@ -458,7 +460,7 @@ mod tests {
             0x69, 0x63, 0x73, 0x6c, 0x69, 0x66, 0x65, 0x02, 0x72, 0x75, 0x00, 0x00, 0x01, 0x00,
             0x01, 0x00, 0x00, 0x29, 0x10, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00,
         ];
-        let p = Packet::from_u8(&test_packet_dns_regression, ENCAP_TYPE_ETH);
+        let p = Packet::from_bytes(&test_packet_dns_regression, ENCAP_TYPE_ETH);
         assert!(p.is_ok());
         let p = p.unwrap();
         assert!(p.layers.len() == 4, "{:#?}", p);

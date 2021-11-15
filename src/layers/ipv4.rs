@@ -67,7 +67,10 @@ impl IPv4 {
 }
 
 impl Layer for IPv4 {
-    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
+    fn from_bytes(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         self.version = bytes[0] >> 4;
         self.hdr_len = bytes[0] & 0x0f;
         // Length is in 4 octets

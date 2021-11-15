@@ -1,11 +1,11 @@
-//! Error types
+//! Error types for scalpel.
 
 /// Error type for [`scalpel`][`crate`]
 #[derive(Debug, PartialEq)]
 pub enum Error {
     /// Byte Array too short
     TooShort,
-    /// A generic arsing error.
+    /// A generic parsing error.
     ParseError,
     /// A layer registration error.
     RegisterError,

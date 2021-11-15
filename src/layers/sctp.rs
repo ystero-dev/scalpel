@@ -224,7 +224,7 @@ impl SCTP {
         } else {
             let layer_creator = layer_creator.unwrap();
             let mut layer = layer_creator();
-            let (_, _processed) = layer.from_u8(&bytes[start..])?;
+            let (_, _processed) = layer.from_bytes(&bytes[start..])?;
 
             ChunkPayload::Processed(layer)
         };
@@ -267,7 +267,10 @@ impl SCTP {
 }
 
 impl Layer for SCTP {
-    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
+    fn from_bytes(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         self.src_port = (bytes[0] as u16) << 8 | (bytes[1] as u16);
         self.dst_port = (bytes[2] as u16) << 8 | (bytes[3] as u16);
         self.verification_tag = u32::from_be_bytes(bytes[4..8].try_into().unwrap())
@@ -316,7 +319,7 @@ mod tests {
         assert!(array.is_ok());
 
         let array = array.unwrap();
-        let p = Packet::from_u8(&array, ENCAP_TYPE_ETH);
+        let p = Packet::from_bytes(&array, ENCAP_TYPE_ETH);
         assert!(p.is_ok(), "{:?}", p.err());
 
         let p = p.unwrap();

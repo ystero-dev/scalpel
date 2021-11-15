@@ -37,7 +37,10 @@ impl M3UA {
 }
 
 impl Layer for M3UA {
-    fn from_u8(&mut self, bytes: &[u8]) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
+    fn from_bytes(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         if bytes.len() < 8 {
             return Err(Error::TooShort);
         }

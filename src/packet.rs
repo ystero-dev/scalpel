@@ -37,7 +37,7 @@ struct Timestamp {
 ///             details.
 ///  * `layers`: A Vector of Opaque structures, each implementing the `Layer` trait. For example
 ///              Each of the following is a Layer - `Ethernet`, `IPv4`, `TCP` etc.
-///  * `unprocessed`: The partof the original byte-stream that is not processed and captured into
+///  * `unprocessed`: The part of the original byte-stream that is not processed and captured into
 ///                   `layers` above.
 #[pyclass]
 #[derive(Debug, Default, Serialize)]
@@ -52,6 +52,20 @@ pub struct Packet {
     pub unprocessed: Vec<u8>,
 }
 
+// Function used to serialize layers in a given packet
+//
+// This is mainly used for JSON serlialization. The layers are serialized as -
+//
+// ```
+//  layers: {
+//      'ethernet' : {
+//          ...
+//      },
+//      'ip': {
+//          ...
+//      },
+//  }
+//  ```
 fn serialize_layers_as_struct<S>(
     layers: &Vec<Box<dyn Layer + Send>>,
     serializer: S,
@@ -82,10 +96,15 @@ pub struct PacketMetadata {
 impl Packet {
     /// Register a new Layer 2 encoding
     ///
-    /// In order to dissect bytes on wire into a [`Packet`] structure, the right encoding needs to
-    /// be registered. An internal Map of [`EncapType`][`crate::types::EncapType`] ->
-    /// [`LayerCreatorFn`][`crate::types::LayerCreatorFn`] is updated when a new
-    /// Layer 2 registers itself. This will cause the 'decoder' function for that layer.
+    /// Each of the Layer 2 structures, follow their own 'encoding' mechanism, to determine which
+    /// subsequent layers are to be decoded first the Layer 2 needs to be determined. Each of the
+    /// Layer 2 Layers (eg. Ethernet) will have to register for this decode themselves.
+    ///
+    /// A Global Map of Layer 2 Encoding Type  as `Key` and Decoding Function as 'value' is
+    /// maintained. Registering a Layer 2 decoder will cause an entry in this map to be created.
+    /// Support for registration of certain Layer 2 decoders (eg. Ethernet) is implemented in
+    /// `scalpel` itself. A client will want to register it's own decoding function by using this
+    /// API.
     pub fn register_encap_type(encap: EncapType, creator: LayerCreatorFn) -> Result<(), Error> {
         let mut map = ENCAP_TYPES_MAP.write().unwrap();
         if map.contains_key(&ENCAP_TYPE_ETH) {
@@ -98,10 +117,12 @@ impl Packet {
 
     /// Create a [`Packet`] from a u8 slice.
     ///
-    /// This is the main 'decoder' function. An application would typically call `Packet::from_u8`.
-    /// This would then return a [`Packet`] structure. The application can then perform actions if
-    /// any on the returned structure.
-    pub fn from_u8(bytes: &[u8], encap: EncapType) -> Result<Self, Error> {
+    /// This is the main 'decoder' function. An application would typically call
+    /// `Packet::from_bytes`. The `encap` parameter passed is the one that is used by the Layer 2
+    /// to register itself in the [`Packet::register_encap_type`] function. Upon successful
+    /// decoding a `Packet` structure is returned on success or error if any in decoding the packet
+    /// is returned.
+    pub fn from_bytes(bytes: &[u8], encap: EncapType) -> Result<Self, Error> {
         let mut p = Packet::default();
 
         let l2: Box<dyn Layer + Send>;
@@ -124,7 +145,7 @@ impl Packet {
         loop {
             {
                 let mut decode_layer = layer.borrow_mut();
-                res = decode_layer.from_u8(&bytes[start..])?;
+                res = decode_layer.from_bytes(&bytes[start..])?;
             }
 
             if res.0.is_none() {
@@ -156,10 +177,10 @@ impl Packet {
 #[pymethods]
 impl Packet {
     #[staticmethod]
-    fn from_u8_py(bytes: &[u8], encap: EncapType) -> PyResult<Self> {
+    fn from_bytes_py(bytes: &[u8], encap: EncapType) -> PyResult<Self> {
         let _ = crate::layers::register_defaults();
 
-        Self::from_u8(bytes, encap).map_err(|e| e.into())
+        Self::from_bytes(bytes, encap).map_err(|e| e.into())
     }
 
     fn as_json(&self) -> PyResult<String> {
@@ -185,19 +206,19 @@ mod tests {
     use crate::layers::tcp::TCP_BASE_HDR_LEN;
 
     #[test]
-    fn from_u8_fail_too_short() {
+    fn from_bytes_fail_too_short() {
         let _ = crate::layers::register_defaults();
 
-        let p = Packet::from_u8("".as_bytes(), ENCAP_TYPE_ETH);
+        let p = Packet::from_bytes("".as_bytes(), ENCAP_TYPE_ETH);
 
         assert!(p.is_err(), "{:?}", p.ok());
     }
 
     #[test]
-    fn from_u8_success_eth_hdr_size() {
+    fn from_bytes_success_eth_hdr_size() {
         let _ = crate::layers::register_defaults();
 
-        let p = Packet::from_u8(&[0; 14], ENCAP_TYPE_ETH);
+        let p = Packet::from_bytes(&[0; 14], ENCAP_TYPE_ETH);
 
         assert!(p.is_ok(), "{:?}", p.err());
     }
@@ -211,7 +232,7 @@ mod tests {
 
         let array = array.unwrap();
         let len = array.len();
-        let p = Packet::from_u8(&array, ENCAP_TYPE_ETH);
+        let p = Packet::from_bytes(&array, ENCAP_TYPE_ETH);
         assert!(p.is_ok(), "{:?}", p.err());
 
         let p = p.unwrap();
@@ -234,7 +255,7 @@ mod tests {
 
         let array = array.unwrap();
         let len = array.len();
-        let p = Packet::from_u8(&array, ENCAP_TYPE_ETH);
+        let p = Packet::from_bytes(&array, ENCAP_TYPE_ETH);
         assert!(p.is_ok(), "{:?}", p.err());
 
         let p = p.unwrap();
@@ -267,7 +288,7 @@ mod tests {
             0x00, 0x01, /* .. */
         ];
 
-        let p = Packet::from_u8(&dns_query, ENCAP_TYPE_ETH);
+        let p = Packet::from_bytes(&dns_query, ENCAP_TYPE_ETH);
         assert!(p.is_ok(), "{:?}", p.err());
         let p = p.unwrap();
         assert!(p.layers.len() == 4, "{:?}", p);
