@@ -24,7 +24,7 @@ lazy_static! {
 pub(crate) fn register_defaults() -> Result<(), Error> {
     use crate::layers::ethernet::register_ethertype;
 
-    register_ethertype(crate::types::ETHERTYPE_IP.clone(), IPv4::creator)?;
+    register_ethertype(crate::types::ETHERTYPE_IP, IPv4::creator)?;
 
     Ok(())
 }
@@ -91,11 +91,9 @@ impl Layer for IPv4 {
 
         let map = PROTOCOLS_MAP.read().unwrap();
         let layer = map.get(&self.proto);
-        if layer.is_none() {
-            Ok((None, IPV4_BASE_HDR_LEN))
-        } else {
-            let l4_creator = layer.unwrap();
-            Ok((Some(l4_creator()), IPV4_BASE_HDR_LEN))
+        match layer {
+            None => Ok((None, IPV4_BASE_HDR_LEN)),
+            Some(l4_creator) => Ok((Some(l4_creator()), IPV4_BASE_HDR_LEN)),
         }
     }
 

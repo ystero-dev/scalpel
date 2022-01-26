@@ -20,8 +20,6 @@ impl core::fmt::Display for Error {
     }
 }
 
-use pyo3;
-
 // Python Bindings
 impl std::convert::From<Error> for pyo3::PyErr {
     // TODO: Add proper error reporting

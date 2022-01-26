@@ -77,12 +77,8 @@ impl Layer for TCP {
 
         self.src_port = (bytes[0] as u16) << 8 | (bytes[1] as u16);
         self.dst_port = (bytes[2] as u16) << 8 | (bytes[3] as u16);
-        self.seq_no = u32::from_be_bytes(bytes[4..8].try_into().unwrap())
-            .try_into()
-            .unwrap();
-        self.ack_no = u32::from_be_bytes(bytes[8..12].try_into().unwrap())
-            .try_into()
-            .unwrap();
+        self.seq_no = u32::from_be_bytes(bytes[4..8].try_into().unwrap());
+        self.ack_no = u32::from_be_bytes(bytes[8..12].try_into().unwrap());
         self.data_offset = bytes[12] >> 4;
         self.flags = (bytes[12] as u16) << 8 | (bytes[13] as u16) & 0x01FF;
         self.window_size = (bytes[14] as u16) << 8 | (bytes[15] as u16);
@@ -94,11 +90,9 @@ impl Layer for TCP {
         if app.is_none() {
             app = map.get(&self.src_port);
         }
-        if app.is_none() {
-            Ok((None, TCP_BASE_HDR_LEN))
-        } else {
-            let app_creator = app.unwrap();
-            Ok((Some(app_creator()), TCP_BASE_HDR_LEN))
+        match app {
+            None => Ok((None, TCP_BASE_HDR_LEN)),
+            Some(app_creator_fn) => Ok((Some(app_creator_fn()), TCP_BASE_HDR_LEN)),
         }
     }
 

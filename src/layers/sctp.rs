@@ -143,7 +143,7 @@ impl Default for SCTPChunk {
 }
 
 fn serialize_sctp_chunks<S>(
-    chunks: &Vec<SCTPChunk>,
+    chunks: &[SCTPChunk],
     serializer: S,
 ) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
 where
@@ -199,9 +199,7 @@ impl SCTP {
         let header = SCTP::process_chunk_header(&bytes[start..])?;
         start += 4;
 
-        let tsn = u32::from_be_bytes(bytes[start..start + 4].try_into().unwrap())
-            .try_into()
-            .unwrap();
+        let tsn = u32::from_be_bytes(bytes[start..start + 4].try_into().unwrap());
         start += 4;
 
         let stream_id = (bytes[start] as u16) | (bytes[start + 1] as u16);
@@ -210,23 +208,23 @@ impl SCTP {
         let stream_seq_no = (bytes[start] as u16) | (bytes[start + 1] as u16);
         start += 2;
 
-        let payload_proto = u32::from_be_bytes(bytes[start..start + 4].try_into().unwrap())
-            .try_into()
-            .unwrap();
+        let payload_proto = u32::from_be_bytes(bytes[start..start + 4].try_into().unwrap());
         start += 4;
 
         let map = PROTOCOLS_MAP.read().unwrap();
         let layer_creator = map.get(&payload_proto);
-        let payload = if layer_creator.is_none() {
-            let payload: Vec<u8> = bytes[start..start + header.chunk_len as usize - 16].into();
+        let payload = match layer_creator {
+            None => {
+                let payload: Vec<u8> = bytes[start..start + header.chunk_len as usize - 16].into();
 
-            ChunkPayload::UnProcessed(payload)
-        } else {
-            let layer_creator = layer_creator.unwrap();
-            let mut layer = layer_creator();
-            let (_, _processed) = layer.from_bytes(&bytes[start..])?;
+                ChunkPayload::UnProcessed(payload)
+            }
+            Some(creator_fn) => {
+                let mut layer = creator_fn();
+                let (_, _processed) = layer.from_bytes(&bytes[start..])?;
 
-            ChunkPayload::Processed(layer)
+                ChunkPayload::Processed(layer)
+            }
         };
 
         let chunk_len = header.chunk_len as usize;
@@ -273,12 +271,8 @@ impl Layer for SCTP {
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         self.src_port = (bytes[0] as u16) << 8 | (bytes[1] as u16);
         self.dst_port = (bytes[2] as u16) << 8 | (bytes[3] as u16);
-        self.verification_tag = u32::from_be_bytes(bytes[4..8].try_into().unwrap())
-            .try_into()
-            .unwrap();
-        self.checksum = u32::from_be_bytes(bytes[8..12].try_into().unwrap())
-            .try_into()
-            .unwrap();
+        self.verification_tag = u32::from_be_bytes(bytes[4..8].try_into().unwrap());
+        self.checksum = u32::from_be_bytes(bytes[8..12].try_into().unwrap());
 
         let mut chunks = vec![];
         let mut start = 12;

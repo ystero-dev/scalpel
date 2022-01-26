@@ -24,7 +24,7 @@ lazy_static! {
 pub(crate) fn register_defaults() -> Result<(), Error> {
     use crate::layers::ethernet::register_ethertype;
 
-    register_ethertype(crate::types::ETHERTYPE_IP6.clone(), IPv6::creator)?;
+    register_ethertype(crate::types::ETHERTYPE_IP6, IPv6::creator)?;
 
     Ok(())
 }
@@ -82,11 +82,9 @@ impl Layer for IPv6 {
 
         let map = NEXT_HEADERS_MAP.read().unwrap();
         let layer = map.get(&self.next_hdr);
-        if layer.is_none() {
-            Ok((None, IPV6_BASE_HDR_LEN))
-        } else {
-            let next_layer_creator = layer.unwrap();
-            Ok((Some(next_layer_creator()), IPV6_BASE_HDR_LEN))
+        match layer {
+            None => Ok((None, IPV6_BASE_HDR_LEN)),
+            Some(next_layer_creator) => Ok((Some(next_layer_creator()), IPV6_BASE_HDR_LEN)),
         }
     }
 

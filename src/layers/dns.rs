@@ -154,7 +154,8 @@ impl DNS {
                         //    the offset.
                         //  2. The `labels` param 'collects' the labels and we only consume two
                         //     bytes.
-                        let previous = ((bytes[i] & 0x3f) as u16) << 8 | (bytes[i + 1] as u16) - 12;
+                        let previous =
+                            ((bytes[i] & 0x3f) as u16) << 8 | ((bytes[i + 1] as u16) - 12);
                         let _ = labels_from_offset(bytes, previous as usize, labels, 0, false)?;
                         consumed += 2;
                         break true;

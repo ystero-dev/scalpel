@@ -67,7 +67,7 @@ pub struct Packet {
 //  }
 //  ```
 fn serialize_layers_as_struct<S>(
-    layers: &Vec<Box<dyn Layer + Send>>,
+    layers: &[Box<dyn Layer + Send>],
     serializer: S,
 ) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
 where
@@ -119,9 +119,8 @@ impl Packet {
     ///
     /// This is the main 'decoder' function. An application would typically call
     /// `Packet::from_bytes`. The `encap` parameter passed is the one that is used by the Layer 2
-    /// to register itself in the [`Packet::register_encap_type`] function. Upon successful
-    /// decoding a `Packet` structure is returned on success or error if any in decoding the packet
-    /// is returned.
+    /// to register itself in the [`Packet::register_encap_type`] function.  `Packet` structure is
+    /// returned on success or error if any in decoding the packet is returned.
     pub fn from_bytes(bytes: &[u8], encap: EncapType) -> Result<Self, Error> {
         let mut p = Packet::default();
 

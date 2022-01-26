@@ -75,11 +75,9 @@ impl Layer for Ethernet {
 
         let map = ETHERTYPES_MAP.read().unwrap();
         let layer = map.get(&self.ethertype);
-        if layer.is_none() {
-            return Ok((None, ETH_HEADER_LEN));
-        } else {
-            let l3_creator = layer.unwrap();
-            return Ok((Some(l3_creator()), ETH_HEADER_LEN));
+        match layer {
+            None => Ok((None, ETH_HEADER_LEN)),
+            Some(l3_creator) => Ok((Some(l3_creator()), ETH_HEADER_LEN)),
         }
     }
 

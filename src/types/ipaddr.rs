@@ -126,13 +126,11 @@ impl fmt::Display for IPv6Address {
                 zero_streak_length += 1;
                 in_zero_streak = true;
             } else {
-                if in_zero_streak {
-                    if zero_streak_length >= 1 {
-                        let _ = segments.0[i].replace(IPv6Segment::ZeroSegment(ZeroGroup {
-                            count: zero_streak_length,
-                        }));
-                        i += 1;
-                    }
+                if in_zero_streak && zero_streak_length >= 1 {
+                    let _ = segments.0[i].replace(IPv6Segment::ZeroSegment(ZeroGroup {
+                        count: zero_streak_length,
+                    }));
+                    i += 1;
                 }
                 let _ = segments.0[i].replace(IPv6Segment::NonZeroSegment(*entry));
                 i += 1;

@@ -26,29 +26,26 @@ fn main() -> std::io::Result<()> {
                 )
             })?;
             for item in ast.items {
-                match item {
-                    syn::Item::Fn(ref i) => {
-                        // The AST contains a Function with `register_defaults` as identifer.
-                        // Collect it to be written to final `layers::register_defaults`.
-                        if i.sig.ident.to_string() == "register_defaults" {
-                            let mut register_defaults_fn_path = entry
-                                .path()
-                                .strip_prefix(&sources_dir)
-                                .unwrap()
-                                .strip_prefix("layers")
-                                .unwrap()
-                                .to_str()
-                                .unwrap()
-                                .to_string()
-                                .replace("/", "::")
-                                .replace("mod.rs", "")
-                                .replace(".rs", "::");
+                if let syn::Item::Fn(ref i) = item {
+                    // The AST contains a Function with `register_defaults` as identifer.
+                    // Collect it to be written to final `layers::register_defaults`.
+                    if i.sig.ident == "register_defaults" {
+                        let mut register_defaults_fn_path = entry
+                            .path()
+                            .strip_prefix(&sources_dir)
+                            .unwrap()
+                            .strip_prefix("layers")
+                            .unwrap()
+                            .to_str()
+                            .unwrap()
+                            .to_string()
+                            .replace("/", "::")
+                            .replace("mod.rs", "")
+                            .replace(".rs", "::");
 
-                            register_defaults_fn_path.push_str("register_defaults()?;");
-                            reg_defaults.push(register_defaults_fn_path);
-                        }
+                        register_defaults_fn_path.push_str("register_defaults()?;");
+                        reg_defaults.push(register_defaults_fn_path);
                     }
-                    _ => {}
                 }
             }
         }

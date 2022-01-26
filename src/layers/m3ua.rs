@@ -65,9 +65,7 @@ impl Layer for M3UA {
             bytes[start],
             bytes.len()
         );
-        self.msg_length = u32::from_be_bytes(bytes[start..start + 4].try_into().unwrap())
-            .try_into()
-            .unwrap();
+        self.msg_length = u32::from_be_bytes(bytes[start..start + 4].try_into().unwrap());
 
         if bytes.len() < self.msg_length as usize {
             return Err(Error::TooShort);

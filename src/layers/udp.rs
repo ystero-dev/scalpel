@@ -77,11 +77,9 @@ impl Layer for UDP {
         if app.is_none() {
             app = map.get(&self.src_port);
         }
-        if app.is_none() {
-            Ok((None, UDP_HDR_LEN))
-        } else {
-            let app_creator = app.unwrap();
-            Ok((Some(app_creator()), UDP_HDR_LEN))
+        match app {
+            None => Ok((None, UDP_HDR_LEN)),
+            Some(app_creator_fn) => Ok((Some(app_creator_fn()), UDP_HDR_LEN)),
         }
     }
 
