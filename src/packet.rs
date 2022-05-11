@@ -174,6 +174,7 @@ impl Packet {
 
 // Python Bindings
 #[pymethods]
+#[cfg(feature = "python-bindings")]
 impl Packet {
     #[staticmethod]
     fn from_bytes_py(bytes: &[u8], encap: EncapType) -> PyResult<Self> {
@@ -187,6 +188,7 @@ impl Packet {
     }
 }
 
+#[cfg(feature = "python-bindings")]
 pub(crate) fn register(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<Packet>()?;
     Ok(())

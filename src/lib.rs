@@ -28,10 +28,12 @@ pub mod layer;
 
 pub mod types;
 
+#[cfg(feature = "python-bindings")]
 use pyo3::prelude::*;
 
 /// Python bindings for packet dissection and sculpting in Rust (scalpel)
 #[pymodule]
+#[cfg(feature = "python-bindings")]
 fn scalpel(py: Python, m: &PyModule) -> PyResult<()> {
     packet::register(py, m)?;
     Ok(())

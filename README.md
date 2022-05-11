@@ -8,4 +8,5 @@ This is still early, actively being developed, the APIs are not stable and are l
 
 ## Getting Started
 
-You can run the example in the `examples` directory as `cargo run --example packet_to_json` which should display the dissected packet in the Json format.
+You can run the example in the `examples` directory as `cargo run --example packet_as_json` which should display the dissected packet in the Json format.
+By default, python bindings are disabled. If you want python bindings, use `--features="python-bindings"` command line argument while building or running the code.
