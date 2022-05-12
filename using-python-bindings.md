@@ -67,3 +67,19 @@ FILE
 ```
 
 Now you can use scalpel provided `Packet.from_bytes_py(..)` method.
+
+
+Note: python bindings are only available when built with --feature=python-bindings argument.
+otherwise you will see following error
+```
+(pyscalpel) siddharth@siddharth-ubuntu:~/work/scalpel/target/debug$ python
+Python 3.8.10 (default, Mar 15 2022, 12:22:08)
+[GCC 9.4.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import scalpel
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ImportError: dynamic module does not define module export function (PyInit_scalpel)
+>>>
+```
+
