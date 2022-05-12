@@ -173,6 +173,7 @@ impl Packet {
 }
 
 // Python Bindings
+#[cfg(feature = "python-bindings")]
 #[pymethods]
 impl Packet {
     #[staticmethod]
@@ -187,6 +188,7 @@ impl Packet {
     }
 }
 
+#[cfg(feature = "python-bindings")]
 pub(crate) fn register(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<Packet>()?;
     Ok(())
