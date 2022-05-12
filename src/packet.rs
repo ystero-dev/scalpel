@@ -173,8 +173,8 @@ impl Packet {
 }
 
 // Python Bindings
-#[pymethods]
 #[cfg(feature = "python-bindings")]
+#[pymethods]
 impl Packet {
     #[staticmethod]
     fn from_bytes_py(bytes: &[u8], encap: EncapType) -> PyResult<Self> {
