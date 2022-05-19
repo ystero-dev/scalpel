@@ -14,6 +14,7 @@ use crate::errors::Error;
 use crate::layer::{EmptyLayer, Layer};
 use crate::types::{EncapType, LayerCreatorFn, ENCAP_TYPE_ETH};
 
+#[cfg(feature = "python-bindings")]
 use pyo3::prelude::*;
 
 lazy_static! {
@@ -39,7 +40,7 @@ struct Timestamp {
 ///              Each of the following is a Layer - `Ethernet`, `IPv4`, `TCP` etc.
 ///  * `unprocessed`: The part of the original byte-stream that is not processed and captured into
 ///                   `layers` above.
-#[pyclass]
+#[cfg_attr(feature = "python-bindings", pyclass)]
 #[derive(Debug, Default, Serialize)]
 pub struct Packet {
     pub meta: PacketMetadata,
