@@ -21,6 +21,7 @@ impl core::fmt::Display for Error {
 }
 
 // Python Bindings
+#[cfg(feature = "python-bindings")]
 impl std::convert::From<Error> for pyo3::PyErr {
     // TODO: Add proper error reporting
     fn from(_e: Error) -> pyo3::PyErr {
