@@ -19,11 +19,18 @@ jobs:
         target: [
           x86_64-unknown-linux-gnu,
         ]
-        cfg_release_channel: [ nightly, stable]
+        cfg_release_channel: [ stable, nightly, beta ]
+        python_version: [ '3.7', '3.8', '3.9', '3.10' ]
 
 
     steps:
     - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python_version }}
+    - name: install maturin
+      run: |
+        python -m pip install maturin==0.13.6
     - name: install rustup
       run: |
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup-init.sh
@@ -42,11 +49,11 @@ jobs:
         cargo test --verbose
     - name: Build with Python Bindings
       run: |
-        rustc -Vv
-        cargo -V
-        cargo build --verbose --features python-bindings
+        maturin build --verbose --features python-bindings --release --out dist
     - name: Run tests with Python Bindings
       run: |
         rustc -Vv
         cargo -V
         cargo test --verbose --features python-bindings
+        python -m pip install scalpel_python_bindings --find-links dist/
+        python -c 'import scalpel; print(scalpel.Packet.from_bytes_py(bytes.fromhex("000573a007d168a3c4f949f686dd600000000020064020010470e5bfdead49572174e82c48872607f8b0400c0c03000000000000001af9c7001903a088300000000080022000da4700000204058c0103030801010402"), 1).as_json())'
