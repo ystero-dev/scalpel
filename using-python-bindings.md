@@ -1,85 +1,32 @@
-After a clean build with `--features=python-bindings`
+# Overview
+
+We are using [`maturin](https://www.maturin.rs/) for building the Python bindings support. Right now the generated bindings are not published on PyPI as yet, as this is still in early stages of development.
+
+# Compiling and Testing Python bindings
+
+1. Run following command to generate and use Python bindings locally. This is tested right now with Python 3.10 (but this should work with any version of Python after 3.7).
 
 ```
-(pyscalpel) siddharth@siddharth-ubuntu:~/work/scalpel$ cd target/debug
-(pyscalpel) siddharth@siddharth-ubuntu:~/work/scalpel/target/debug$ ls
-build  deps  examples  incremental  libscalpel.d  libscalpel.rlib  libscalpel.so
-```
+# Create a Virtual Environment
+$ python3 -m venv venv
 
-rename libscalpel.so to scalpel.so
-```
-(pyscalpel) siddharth@siddharth-ubuntu:~/work/scalpel/target/debug$ mv libscalpel.so scalpel.so
-```
+# Activate the virtual environment
+$ . venv/bin/activate
 
-start python shell and import scalpel
-```
-(pyscalpel) siddharth@siddharth-ubuntu:~/work/scalpel/target/debug$ python
-Python 3.8.10 (default, Mar 15 2022, 12:22:08)
-[GCC 9.4.0] on linux
-Type "help", "copyright", "credits" or "license" for more information.
+# Install `maturin`
+$ pip install -y maturin
+
+# Build and Locally use Python bindings (This uses `pyproject.toml` file.)
+# Note since `python-bindings` are optional, `-F python-bindings` is required or else the bindings won't be built.
+$ maturin develop -F python-bindings
+
+# Check Out Python bindings.
+$ python
+
 >>> import scalpel
+>>> buffer = bytes.fromhex("000573a007d168a3c4f949f686dd600000000020064020010470e5bfdead49572174e82c48872607f8b0400c0c03000000000000001af9c7001903a088300000000080022000da4700000204058c0103030801010402")
+>>> p = scalpel.Packet.from_bytes_py(buffer)
+>>> print(p.as_json())
+>>> # Check help for `scalpel`
 >>> help(scalpel)
-
->>> dir(scalpel)
-['Packet', '__all__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__spec__']
->>> help(scalpel)
-
-Help on module scalpel:
-
-NAME
-    scalpel - Python bindings for packet dissection and sculpting in Rust (scalpel)
-
-CLASSES
-    builtins.object
-        builtins.Packet
-
-    class Packet(object)
-     |  [`Packet`] is a central structure in `scalpel` containing the decoded data and some metadata.
-     |
-     |  When a byte-stream is 'dissected' by scalpel, it creates a `Packet` structure that contains the
-     |  following information.
-     |   * `data` : Optional 'data' from which this packet is constructed.
-     |   * `meta` : Metadata associated with the packet. This contains information like timestamp,
-     |              interface identifier where the data was captured etc. see `PacketMetadata` for
-     |              details.
-     |   * `layers`: A Vector of Opaque structures, each implementing the `Layer` trait. For example
-     |               Each of the following is a Layer - `Ethernet`, `IPv4`, `TCP` etc.
-     |   * `unprocessed`: The part of the original byte-stream that is not processed and captured into
-     |                    `layers` above.
-     |
-     |  Methods defined here:
-     |
-     |  as_json(...)
-     |
-     |  ----------------------------------------------------------------------
-     |  Static methods defined here:
-     |
-     |  __new__(*args, **kwargs) from builtins.type
-     |      Create and return a new object.  See help(type) for accurate signature.
-     |
-     |  from_bytes_py(...)
-
-DATA
-    __all__ = ['Packet']
-
-FILE
-    /home/siddharth/work/scalpel/target/debug/scalpel.so
 ```
-
-Now you can use scalpel provided `Packet.from_bytes_py(..)` method.
-
-
-Note: python bindings are only available when built with --feature=python-bindings argument.
-otherwise you will see following error
-```
-(pyscalpel) siddharth@siddharth-ubuntu:~/work/scalpel/target/debug$ python
-Python 3.8.10 (default, Mar 15 2022, 12:22:08)
-[GCC 9.4.0] on linux
-Type "help", "copyright", "credits" or "license" for more information.
->>> import scalpel
-Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-ImportError: dynamic module does not define module export function (PyInit_scalpel)
->>>
-```
-

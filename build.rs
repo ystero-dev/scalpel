@@ -15,6 +15,7 @@ fn main() -> std::io::Result<()> {
     for entry in walker {
         let entry = entry.unwrap();
         if entry.file_type().is_file() {
+            eprintln!("Path: {:#?}", entry.path());
             let mut file = File::open(entry.path()).unwrap();
             let mut content = String::new();
             file.read_to_string(&mut content).unwrap();
