@@ -1,6 +1,5 @@
 //! Packet Structure
 
-use core::cell::RefCell;
 use core::fmt::Debug;
 
 // FIXME: Should work with `no_std`
@@ -11,7 +10,7 @@ use lazy_static::lazy_static;
 use serde::{ser::SerializeStruct, Serialize, Serializer};
 
 use crate::errors::Error;
-use crate::layer::{EmptyLayer, Layer};
+use crate::layer::Layer;
 use crate::types::{EncapType, LayerCreatorFn, ENCAP_TYPE_ETH};
 
 #[cfg(feature = "python-bindings")]
@@ -139,32 +138,24 @@ impl Packet {
             l2 = creator_fn.unwrap()();
         }
 
-        let layer: RefCell<Box<dyn Layer + Send>> = RefCell::new(l2);
+        let mut current_layer = l2;
         let mut res: (Option<Box<dyn Layer + Send>>, usize);
         let mut start = 0;
         loop {
-            {
-                let mut decode_layer = layer.borrow_mut();
-                res = decode_layer.from_bytes(&bytes[start..])?;
-            }
+            res = current_layer.from_bytes(&bytes[start..])?;
 
             if res.0.is_none() {
-                // We need to get out the 'last' layer and hence replace it with an EmptyLayer that
-                // is kept in the `RefCell` which will get dropped later. Empty Layer is like
-                // `Default::default()` for `Box<dyn Layer>`
-                let boxed = layer.replace(Box::new(EmptyLayer {}));
-
-                p.layers.push(boxed);
                 start += res.1;
                 break;
             }
 
             // if the layer exists, get it in a layer.
-            let boxed = layer.replace(res.0.unwrap());
+            let boxed = current_layer;
             start += res.1;
 
             // append the layer to layers.
             p.layers.push(boxed);
+            current_layer = res.0.unwrap();
         }
         if start != bytes.len() {
             let _ = core::mem::replace(&mut p.unprocessed, bytes[start..].to_vec());
@@ -238,7 +229,7 @@ mod tests {
         assert!(p.is_ok(), "{:?}", p.err());
 
         let p = p.unwrap();
-        assert!(p.layers.len() == 3, "{:?}", p);
+        assert!(p.layers.len() == 2, "{:?}", p);
         assert!(
             p.unprocessed.len() == (len - (ETH_HEADER_LEN + IPV4_BASE_HDR_LEN + TCP_BASE_HDR_LEN)),
             "{}:{}:{:#?}",
@@ -261,7 +252,7 @@ mod tests {
         assert!(p.is_ok(), "{:?}", p.err());
 
         let p = p.unwrap();
-        assert!(p.layers.len() == 3, "{:?}", p);
+        assert!(p.layers.len() == 2, "{:?}", p);
         assert!(
             p.unprocessed.len() == (len - (ETH_HEADER_LEN + IPV6_BASE_HDR_LEN + TCP_BASE_HDR_LEN)),
             "{}:{}:{:#?}",
@@ -293,6 +284,6 @@ mod tests {
         let p = Packet::from_bytes(&dns_query, ENCAP_TYPE_ETH);
         assert!(p.is_ok(), "{:?}", p.err());
         let p = p.unwrap();
-        assert!(p.layers.len() == 4, "{:?}", p);
+        assert!(p.layers.len() == 3, "{:?}", p);
     }
 }

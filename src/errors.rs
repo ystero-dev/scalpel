@@ -1,7 +1,7 @@
 //! Error types for scalpel.
 
 /// Error type for [`scalpel`][`crate`]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     /// Byte Array too short
     TooShort,

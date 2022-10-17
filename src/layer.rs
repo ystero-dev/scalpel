@@ -33,31 +33,3 @@ pub trait Layer: Send + Debug + erased_serde::Serialize {
 }
 
 serialize_trait_object!(Layer);
-
-///
-/// An empty Layer indicating 'last' decoded layer.
-///
-/// Typically when a Layer can no longer determine the next layer to be decoded, the 'decoder'
-/// function returns `None` (See `from_bytes`). This is used for adding an 'Empty' layer as next layer
-/// which is discarded.
-#[derive(Debug, Default, serde::Serialize)]
-pub struct EmptyLayer;
-
-impl Layer for EmptyLayer {
-    fn from_bytes(
-        &mut self,
-        _btes: &[u8],
-    ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
-        Ok((Some(Box::new(EmptyLayer {})), 0))
-    }
-
-    #[inline(always)]
-    fn name(&self) -> &'static str {
-        "empty"
-    }
-
-    #[inline(always)]
-    fn short_name(&self) -> &'static str {
-        "empty"
-    }
-}
