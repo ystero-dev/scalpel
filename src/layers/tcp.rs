@@ -67,7 +67,7 @@ impl TCP {
 }
 
 impl Layer for TCP {
-    fn from_bytes(
+    fn decode_bytes(
         &mut self,
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {

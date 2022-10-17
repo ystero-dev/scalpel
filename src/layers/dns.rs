@@ -343,7 +343,7 @@ impl DNS {
 }
 
 impl Layer for DNS {
-    fn from_bytes(
+    fn decode_bytes(
         &mut self,
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
@@ -437,7 +437,7 @@ mod tests {
 
         let mut dns: Box<dyn crate::layer::Layer> = Box::new(super::DNS::default());
 
-        let p = dns.from_bytes(&dns_query[42..]);
+        let p = dns.decode_bytes(&dns_query[42..]);
         assert!(p.is_ok(), "{:#?}", dns);
     }
 

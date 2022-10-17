@@ -142,7 +142,7 @@ impl Packet {
         let mut res: (Option<Box<dyn Layer + Send>>, usize);
         let mut start = 0;
         loop {
-            res = current_layer.from_bytes(&bytes[start..])?;
+            res = current_layer.decode_bytes(&bytes[start..])?;
 
             if res.0.is_none() {
                 start += res.1;
@@ -165,6 +165,7 @@ impl Packet {
 }
 
 // Python Bindings
+#[allow(clippy::borrow_deref_ref)]
 #[cfg(feature = "python-bindings")]
 #[pymethods]
 impl Packet {
