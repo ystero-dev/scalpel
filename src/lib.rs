@@ -1,4 +1,3 @@
-#![allow(clippy::upper_case_acronyms)]
 //! A crate for dissecting and sculpting Network packets.
 //!
 //! Being able to dissect a stream of bytes from wire into a human or machine readable structures

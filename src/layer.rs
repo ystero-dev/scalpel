@@ -22,8 +22,10 @@ pub trait Layer: Send + Debug + erased_serde::Serialize {
     /// we do not know how to decode further, but this is not an error. This might happen for
     /// example for protocols that are not yet supported. Additional `Send` trait is required for
     /// Python bindings.
-    fn from_bytes(&mut self, bytes: &[u8])
-        -> Result<(Option<Box<dyn Layer + Send>>, usize), Error>;
+    fn decode_bytes(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error>;
 
     /// Name for the given layer.
     fn name(&self) -> &'static str;

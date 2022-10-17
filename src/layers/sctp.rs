@@ -71,7 +71,6 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
     Ok(())
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 enum ChunkPayload {
     #[serde(serialize_with = "hex::serde::serialize")]
@@ -222,7 +221,7 @@ impl SCTP {
             }
             Some(creator_fn) => {
                 let mut layer = creator_fn();
-                let (_, _processed) = layer.from_bytes(&bytes[start..])?;
+                let (_, _processed) = layer.decode_bytes(&bytes[start..])?;
 
                 ChunkPayload::Processed(layer)
             }
@@ -266,7 +265,7 @@ impl SCTP {
 }
 
 impl Layer for SCTP {
-    fn from_bytes(
+    fn decode_bytes(
         &mut self,
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
