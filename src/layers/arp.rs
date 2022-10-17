@@ -88,6 +88,6 @@ mod tests {
         assert!(p.is_ok(), "{:?}", p.err());
 
         let p = p.unwrap();
-        assert!(p.layers.len() == 2, "{:?}", p);
+        assert!(p.layers.len() == 1, "{:?}", p);
     }
 }

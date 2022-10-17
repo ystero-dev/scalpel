@@ -39,7 +39,7 @@ fn main() -> std::io::Result<()> {
                             .to_str()
                             .unwrap()
                             .to_string()
-                            .replace("/", "::")
+                            .replace('/', "::")
                             .replace("mod.rs", "")
                             .replace(".rs", "::");
 
@@ -80,7 +80,7 @@ fn main() -> std::io::Result<()> {
     let outfile_path = output_path.join("register_defaults.rs");
     {
         let mut outfile = File::create(&outfile_path).unwrap();
-        let _ = outfile.write(&output_str.as_bytes());
+        let _ = outfile.write(output_str.as_bytes());
         let _ = outfile.flush();
     }
 

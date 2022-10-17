@@ -81,6 +81,7 @@ enum ChunkPayload {
     Processed(Box<dyn Layer + Send>),
 }
 
+#[allow(clippy::borrowed_box)]
 fn serialize_sctp_chunk_layer<S>(
     chunk_layer: &Box<dyn Layer + Send>,
     serializer: S,
@@ -317,6 +318,6 @@ mod tests {
         assert!(p.is_ok(), "{:?}", p.err());
 
         let p = p.unwrap();
-        assert!(p.layers.len() == 3, "{:#?}", p);
+        assert!(p.layers.len() == 2, "{:#?}", p);
     }
 }
