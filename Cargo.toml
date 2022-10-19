@@ -20,6 +20,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 erased-serde = "0.3"
 pyo3 = { version = "0.14.5", features = ["extension-module"], optional=true}
+pcap = { version = "*", optional=true}
 
 [dev-dependencies]
 criterion = "0.3"
@@ -41,6 +42,13 @@ harness = false
 name = "dns"
 harness = false
 
+[[example]]
+name = "packet_json"
+path = "examples/packet_as_json.rs"
+
+[[example]]
+name = "pcap"
+path = "examples/pcap_example.rs"
 
 [build-dependencies]
 syn = { version = "1.0", features = ["full"]}
