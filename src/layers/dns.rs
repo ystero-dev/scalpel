@@ -464,6 +464,6 @@ mod tests {
         let p = Packet::from_bytes(&test_packet_dns_regression, ENCAP_TYPE_ETH);
         assert!(p.is_ok());
         let p = p.unwrap();
-        assert!(p.layers.len() == 3, "{:#?}", p);
+        assert!(p.layers.len() == 4, "{:#?}", p);
     }
 }

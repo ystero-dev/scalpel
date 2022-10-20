@@ -19,11 +19,14 @@ lazy_static! {
 
 /// TCP header length
 pub const TCP_BASE_HDR_LEN: usize = 20_usize;
-/// IANA Assigned protocol number for UDP
+
+/// IANA Assigned protocol number for TCP
 pub const IPPROTO_TCP: u8 = 6_u8;
 
 // Register ourselves With IPv4 and IPv6
 pub(crate) fn register_defaults() -> Result<(), Error> {
+    lazy_static::initialize(&TCP_APPS_MAP);
+
     ipv4::register_protocol(IPPROTO_TCP, TCP::creator)?;
     ipv6::register_next_header(IPPROTO_TCP, TCP::creator)?;
 
@@ -35,6 +38,8 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
 /// This is a public API function for an App whose dissector should be called after TCP Layer's if
 /// the Source or Destination port matches one of the ports.
 pub fn register_app(port: u16, app: LayerCreatorFn) -> Result<(), Error> {
+    lazy_static::initialize(&TCP_APPS_MAP);
+
     let mut map = TCP_APPS_MAP.write().unwrap();
 
     if map.contains_key(&port) {

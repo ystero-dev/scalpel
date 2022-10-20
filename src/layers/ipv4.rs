@@ -24,6 +24,8 @@ lazy_static! {
 pub(crate) fn register_defaults() -> Result<(), Error> {
     use crate::layers::ethernet::register_ethertype;
 
+    lazy_static::initialize(&PROTOCOLS_MAP);
+
     register_ethertype(crate::types::ETHERTYPE_IP, IPv4::creator)?;
 
     Ok(())
@@ -34,6 +36,8 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
 /// Higher level protocols should call this function to register themselves for decoding with the
 /// IPv4 Layer.
 pub fn register_protocol(proto: u8, creator: LayerCreatorFn) -> Result<(), Error> {
+    lazy_static::initialize(&PROTOCOLS_MAP);
+
     let mut map = PROTOCOLS_MAP.write().unwrap();
     if map.contains_key(&proto) {
         return Err(Error::RegisterError);

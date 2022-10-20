@@ -7,7 +7,9 @@ use std::path::PathBuf;
 // dirty and perhaps can be made better using APIs from `ra_ap_hir` or `ra_ap_vfs`, but that's an
 // overkill at the moment. We should fix bugs in this if any.
 fn main() -> std::io::Result<()> {
-    let sources_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("src");
+    let sources_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())
+        .join("src")
+        .join("layers");
 
     let walker = walkdir::WalkDir::new(&sources_dir);
 
@@ -34,8 +36,6 @@ fn main() -> std::io::Result<()> {
                         let mut register_defaults_fn_path = entry
                             .path()
                             .strip_prefix(&sources_dir)
-                            .unwrap()
-                            .strip_prefix("layers")
                             .unwrap()
                             .to_str()
                             .unwrap()
@@ -72,6 +72,8 @@ fn main() -> std::io::Result<()> {
     .to_string();
 
     output_str += "pub fn register_defaults() -> Result<(), crate::errors::Error> {\n\t";
+    // We need to make sure `packet::register_defaults` is initialized first.
+    output_str += "\n\tcrate::packet::register_defaults()?;\n\t";
     output_str += &reg_defaults.join("\n\t");
 
     output_str += "\n\n\tOk(())\n";

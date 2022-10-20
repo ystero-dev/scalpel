@@ -24,6 +24,7 @@ lazy_static! {
 pub(crate) fn register_defaults() -> Result<(), Error> {
     use crate::layers::ethernet::register_ethertype;
 
+    lazy_static::initialize(&NEXT_HEADERS_MAP);
     register_ethertype(crate::types::ETHERTYPE_IP6, IPv6::creator)?;
 
     Ok(())
@@ -33,6 +34,8 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
 ///
 /// All the Protocols use this value, in addition to IPv6 Extension headers.
 pub fn register_next_header(header: u8, creator: LayerCreatorFn) -> Result<(), Error> {
+    lazy_static::initialize(&NEXT_HEADERS_MAP);
+
     let mut map = NEXT_HEADERS_MAP.write().unwrap();
 
     if map.contains_key(&header) {

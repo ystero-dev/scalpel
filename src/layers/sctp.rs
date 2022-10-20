@@ -44,7 +44,7 @@ lazy_static! {
     };
     static ref UNKNOWN_CHUNK_TYPE: &'static str = "Unknown Chunk";
 
-    static ref PROTOCOLS_MAP: RwLock<HashMap<u32, LayerCreatorFn>> = RwLock::new(HashMap::new());
+    static ref SCTP_PROTOCOLS_MAP: RwLock<HashMap<u32, LayerCreatorFn>> = RwLock::new(HashMap::new());
 }
 
 /// SCTP Protocol Number
@@ -54,7 +54,9 @@ pub const IPPROTO_SCTP: u8 = 132_u8;
 ///
 /// This will be used by M3UA (say)
 pub fn register_datachunk_protocol(proto: u32, creator: LayerCreatorFn) -> Result<(), Error> {
-    let mut map = PROTOCOLS_MAP.write().unwrap();
+    lazy_static::initialize(&SCTP_PROTOCOLS_MAP);
+
+    let mut map = SCTP_PROTOCOLS_MAP.write().unwrap();
     if map.contains_key(&proto) {
         return Err(Error::RegisterError);
     }
@@ -65,6 +67,8 @@ pub fn register_datachunk_protocol(proto: u32, creator: LayerCreatorFn) -> Resul
 
 // Register ourselves With IPv4 and IPv6
 pub(crate) fn register_defaults() -> Result<(), Error> {
+    lazy_static::initialize(&SCTP_PROTOCOLS_MAP);
+
     ipv4::register_protocol(IPPROTO_SCTP, SCTP::creator)?;
     ipv6::register_next_header(IPPROTO_SCTP, SCTP::creator)?;
 
@@ -211,7 +215,7 @@ impl SCTP {
         let payload_proto = u32::from_be_bytes(bytes[start..start + 4].try_into().unwrap());
         start += 4;
 
-        let map = PROTOCOLS_MAP.read().unwrap();
+        let map = SCTP_PROTOCOLS_MAP.read().unwrap();
         let layer_creator = map.get(&payload_proto);
         let payload = match layer_creator {
             None => {
@@ -317,6 +321,6 @@ mod tests {
         assert!(p.is_ok(), "{:?}", p.err());
 
         let p = p.unwrap();
-        assert!(p.layers.len() == 2, "{:#?}", p);
+        assert!(p.layers.len() == 3, "{:#?}", p);
     }
 }
