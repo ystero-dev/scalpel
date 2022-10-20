@@ -40,7 +40,7 @@ pub fn register_protocol(proto: u8, creator: LayerCreatorFn) -> Result<(), Error
 
     let mut map = PROTOCOLS_MAP.write().unwrap();
     if map.contains_key(&proto) {
-        return Err(Error::RegisterError);
+        return Err(Error::RegisterError(format!("proto: {}", proto)));
     }
     map.insert(proto, creator);
 

@@ -40,8 +40,9 @@ pub fn register_app(port: u16, app: LayerCreatorFn) -> Result<(), Error> {
 
     let mut map = UDP_APPS_MAP.write().unwrap();
 
+    eprintln!("UDP Map: {:?}", map);
     if map.contains_key(&port) {
-        return Err(Error::RegisterError);
+        return Err(Error::RegisterError(format!("UDP Port: {}", port)));
     }
     map.insert(port, app);
 

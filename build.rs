@@ -52,7 +52,10 @@ fn main() -> std::io::Result<()> {
         }
     }
 
-    let mut output_str = r#"
+    let mut output_str = String::new();
+    output_str += "use std::sync::Once;";
+    output_str += "static INIT: Once = Once::new();";
+    output_str += &r#"
 /// Register Default protocol handlers.
 ///
 /// Each [`Layer`][`crate::layer::Layer`] in `scalpel` will be decoded by a certain field in the
@@ -72,11 +75,20 @@ fn main() -> std::io::Result<()> {
     .to_string();
 
     output_str += "pub fn register_defaults() -> Result<(), crate::errors::Error> {\n\t";
+
+    output_str += "let mut result: Result<(), crate::errors::Error> = Ok(());";
+
+    output_str += "fn inner() -> Result<(), crate::errors::Error> {";
     // We need to make sure `packet::register_defaults` is initialized first.
     output_str += "\n\tcrate::packet::register_defaults()?;\n\t";
     output_str += &reg_defaults.join("\n\t");
+    output_str += "Ok(())";
+    output_str += "}";
+    output_str += "INIT.call_once(|| { ";
+    output_str += "result = inner();";
 
-    output_str += "\n\n\tOk(())\n";
+    output_str += "});";
+    output_str += "\n\n\tresult\n";
     output_str += "}";
 
     let output_path = PathBuf::from(env::var("OUT_DIR").unwrap());

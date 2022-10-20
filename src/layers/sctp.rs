@@ -58,7 +58,7 @@ pub fn register_datachunk_protocol(proto: u32, creator: LayerCreatorFn) -> Resul
 
     let mut map = SCTP_PROTOCOLS_MAP.write().unwrap();
     if map.contains_key(&proto) {
-        return Err(Error::RegisterError);
+        return Err(Error::RegisterError(format!("SCTP Proto: {}", proto)));
     }
     map.insert(proto, creator);
 
