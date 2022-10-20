@@ -39,7 +39,10 @@ pub fn register_next_header(header: u8, creator: LayerCreatorFn) -> Result<(), E
     let mut map = NEXT_HEADERS_MAP.write().unwrap();
 
     if map.contains_key(&header) {
-        return Err(Error::RegisterError);
+        return Err(Error::RegisterError(format!(
+            "IPv6 Next Header: {}",
+            header
+        )));
     }
 
     map.insert(header, creator);

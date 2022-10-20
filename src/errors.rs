@@ -8,7 +8,7 @@ pub enum Error {
     /// A generic parsing error.
     ParseError,
     /// A layer registration error.
-    RegisterError,
+    RegisterError(String),
 }
 
 // FIXME: Should work with `no_std`

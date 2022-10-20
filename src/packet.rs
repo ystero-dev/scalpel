@@ -113,8 +113,9 @@ impl Packet {
     /// API.
     pub fn register_encap_type(encap: EncapType, creator: LayerCreatorFn) -> Result<(), Error> {
         let mut map = ENCAP_TYPES_MAP.write().unwrap();
+        eprintln!("map: {:?}", map);
         if map.contains_key(&ENCAP_TYPE_ETH) {
-            return Err(Error::RegisterError);
+            return Err(Error::RegisterError(format!("Encap: {}", encap)));
         }
         map.insert(encap, creator);
 
