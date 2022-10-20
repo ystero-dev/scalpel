@@ -23,6 +23,8 @@ pub const IPPROTO_UDP: u8 = 17_u8;
 
 // Register UDP with Protocol Handler in IPv4 and IPv6
 pub(crate) fn register_defaults() -> Result<(), Error> {
+    lazy_static::initialize(&UDP_APPS_MAP);
+
     ipv4::register_protocol(IPPROTO_UDP, UDP::creator)?;
     ipv6::register_next_header(IPPROTO_UDP, UDP::creator)?;
 
@@ -34,6 +36,8 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
 /// This is a public API function for an App whose dissector should be called after UDP Layer's if
 /// the Source or Destination port matches one of the ports.
 pub fn register_app(port: u16, app: LayerCreatorFn) -> Result<(), Error> {
+    lazy_static::initialize(&UDP_APPS_MAP);
+
     let mut map = UDP_APPS_MAP.write().unwrap();
 
     if map.contains_key(&port) {

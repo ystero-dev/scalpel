@@ -27,6 +27,12 @@ struct Timestamp {
     nsecs: i64,
 }
 
+pub(crate) fn register_defaults() -> Result<(), Error> {
+    lazy_static::initialize(&ENCAP_TYPES_MAP);
+
+    Ok(())
+}
+
 /// [`Packet`] is a central structure in `scalpel` containing the decoded data and some metadata.
 ///
 /// When a byte-stream is 'dissected' by scalpel, it creates a `Packet` structure that contains the
@@ -145,6 +151,7 @@ impl Packet {
             res = current_layer.decode_bytes(&bytes[start..])?;
 
             if res.0.is_none() {
+                p.layers.push(current_layer);
                 start += res.1;
                 break;
             }
@@ -230,7 +237,7 @@ mod tests {
         assert!(p.is_ok(), "{:?}", p.err());
 
         let p = p.unwrap();
-        assert!(p.layers.len() == 2, "{:?}", p);
+        assert!(p.layers.len() == 3, "{:?}", p);
         assert!(
             p.unprocessed.len() == (len - (ETH_HEADER_LEN + IPV4_BASE_HDR_LEN + TCP_BASE_HDR_LEN)),
             "{}:{}:{:#?}",
@@ -253,7 +260,7 @@ mod tests {
         assert!(p.is_ok(), "{:?}", p.err());
 
         let p = p.unwrap();
-        assert!(p.layers.len() == 2, "{:?}", p);
+        assert!(p.layers.len() == 3, "{:?}", p);
         assert!(
             p.unprocessed.len() == (len - (ETH_HEADER_LEN + IPV6_BASE_HDR_LEN + TCP_BASE_HDR_LEN)),
             "{}:{}:{:#?}",
@@ -285,6 +292,6 @@ mod tests {
         let p = Packet::from_bytes(&dns_query, ENCAP_TYPE_ETH);
         assert!(p.is_ok(), "{:?}", p.err());
         let p = p.unwrap();
-        assert!(p.layers.len() == 3, "{:?}", p);
+        assert!(p.layers.len() == 4, "{:?}", p);
     }
 }

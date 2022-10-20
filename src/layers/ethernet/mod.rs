@@ -30,6 +30,8 @@ lazy_static! {
 
 // Register our Encap Types with the Packet.
 pub(crate) fn register_defaults() -> Result<(), Error> {
+    lazy_static::initialize(&ETHERTYPES_MAP);
+
     Packet::register_encap_type(ENCAP_TYPE_ETH, Ethernet::creator)
 }
 
@@ -39,6 +41,8 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
 /// by calling this function.
 ///
 pub fn register_ethertype(eth_type: EtherType, layer: LayerCreatorFn) -> Result<(), Error> {
+    lazy_static::initialize(&ETHERTYPES_MAP);
+
     let mut map = ETHERTYPES_MAP.write().unwrap();
     if map.contains_key(&eth_type) {
         return Err(Error::RegisterError);
