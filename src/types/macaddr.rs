@@ -27,7 +27,10 @@ impl TryFrom<&'_ [u8]> for MACAddress {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         if slice.len() != 6 {
-            Err(CrateError::ParseError)
+            Err(CrateError::ParseError(format!(
+                "MacAddress: {}",
+                hex::encode(slice)
+            )))
         } else {
             let mut m = MACAddress::default();
             m.0.copy_from_slice(slice);
@@ -39,8 +42,8 @@ impl TryFrom<&'_ [u8]> for MACAddress {
 impl TryFrom<&'_ str> for MACAddress {
     type Error = CrateError;
 
-    fn try_from(_str: &str) -> Result<Self, Self::Error> {
-        Err(CrateError::ParseError)
+    fn try_from(str: &str) -> Result<Self, Self::Error> {
+        Err(CrateError::ParseError(format!("MacAddress: {}", str)))
     }
 }
 
@@ -70,20 +73,25 @@ mod tests {
     fn byte_array_too_small_fail() {
         let mac_address: Result<MACAddress, _> = [00u8, 01u8, 02u8][..].try_into();
         assert!(mac_address.is_err());
-        assert!(mac_address.err().unwrap() == CrateError::ParseError);
+        assert!(
+            mac_address.err().unwrap() == CrateError::ParseError("MacAddress: 000102".to_string())
+        );
     }
 
     #[test]
     fn byte_array_too_large_fail() {
         let mac_address: Result<MACAddress, _> = [00u8; 10].as_ref().try_into();
         assert!(mac_address.is_err());
-        assert!(mac_address.err().unwrap() == CrateError::ParseError);
+        assert!(
+            mac_address.err().unwrap()
+                == CrateError::ParseError("MacAddress: 00000000000000000000".to_string())
+        );
     }
 
     #[test]
     fn str_always_fail() {
         let mac_address: Result<MACAddress, _> = "".try_into();
         assert!(mac_address.is_err());
-        assert!(mac_address.err().unwrap() == CrateError::ParseError);
+        assert!(mac_address.err().unwrap() == CrateError::ParseError("MacAddress: ".to_string()));
     }
 }

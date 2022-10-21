@@ -15,8 +15,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         match p {
             Ok(p) => println!("{}", serde_json::to_string_pretty(&p).unwrap()),
             Err(e) => {
-                eprintln!("Err: {:?}, data: {:?}", e, packet.data);
-                panic!("error!!");
+                eprintln!("Err: {:?}, data: {:?}", e, hex::encode(packet.data));
             }
         }
         // print the json of the packet.
