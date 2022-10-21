@@ -1,6 +1,6 @@
 # Overview
 
-We are using [`maturin](https://www.maturin.rs/) for building the Python bindings support. Right now the generated bindings are not published on PyPI as yet, as this is still in early stages of development.
+We are using [maturin](https://www.maturin.rs/) for building the Python bindings support. Right now the generated bindings are not published on PyPI as yet, as this is still in early stages of development.
 
 # Compiling and Testing Python bindings
 
