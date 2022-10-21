@@ -8,7 +8,8 @@ This is still early, actively being developed, the APIs are not stable and are l
 
 ## Getting Started
 
-You can run the example in the `examples` directory as `cargo run --example packet_as_json` which should display the dissected packet in the Json format.
+Right now the supported API allows one to dissect packets on wire and display as Json (this uses `serde_json` and thus `serde`, so most `serde` format may work) -
+1. `packet_json` - An example that demonstrates how any `buffer` can be read as a `scalpel::Packet` structure.
+1. `pcap` - An example that demonstrates how to display packets in Json format those captured on the wire. (this should be run as `sudo`).
 
 By default, python bindings are disabled. If you want python bindings, use `--features="python-bindings"` command line argument while building or running the code. Refer to [`using-python-bindings.md`](https://github.com/gabhijit/scalpel/blob/master/using-python-bindings.md) to get started with using Python bindings. Currently, only we provide a basic dissection and displaying a packet as json functionality from the Python bindings. This support is a WIP.
-

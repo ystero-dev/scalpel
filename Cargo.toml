@@ -1,6 +1,6 @@
 [package]
 name = "scalpel"
-version = "0.1.0"
+version = "0.1.1"
 license-file = "LICENSE"
 readme = "README.md"
 keywords = ["Wireshark", "pcap", "packet", "packet-parsing"]
