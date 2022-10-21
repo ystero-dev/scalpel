@@ -79,7 +79,10 @@ impl Layer for IPv4 {
         self.hdr_len = bytes[0] & 0x0f;
         // Length is in 4 octets
         if bytes.len() < (self.hdr_len * 4).into() {
-            return Err(Error::ParseError);
+            return Err(Error::ParseError(format!(
+                "IPv4 too short: {}",
+                bytes.len()
+            )));
         }
         self.tos = bytes[1];
         self.len = (bytes[2] as u16) << 8 | (bytes[3] as u16);

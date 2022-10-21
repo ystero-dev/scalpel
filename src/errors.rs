@@ -6,7 +6,7 @@ pub enum Error {
     /// Byte Array too short
     TooShort,
     /// A generic parsing error.
-    ParseError,
+    ParseError(String),
     /// A layer registration error.
     RegisterError(String),
 }

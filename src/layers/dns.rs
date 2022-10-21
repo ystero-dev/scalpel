@@ -181,7 +181,7 @@ impl DNS {
                         i += count;
                     }
                     _ => {
-                        return Err(Error::ParseError);
+                        return Err(Error::ParseError(format!("Unknown DNS PTR: {:x}", ptr)));
                     }
                 }
             };

@@ -18,7 +18,10 @@ impl TryFrom<&'_ [u8]> for IPv4Address {
 
     fn try_from(slice: &'_ [u8]) -> Result<Self, Self::Error> {
         if slice.len() != 4 {
-            Err(CrateError::ParseError)
+            Err(CrateError::ParseError(format!(
+                "IPv4 Parse Error: {}",
+                hex::encode(slice),
+            )))
         } else {
             let mut ip = IPv4Address::default();
             ip.0.copy_from_slice(slice);
@@ -30,8 +33,11 @@ impl TryFrom<&'_ [u8]> for IPv4Address {
 impl TryFrom<&'_ str> for IPv4Address {
     type Error = CrateError;
 
-    fn try_from(_slice: &'_ str) -> Result<Self, Self::Error> {
-        Err(CrateError::ParseError)
+    fn try_from(slice: &'_ str) -> Result<Self, Self::Error> {
+        Err(CrateError::ParseError(format!(
+            "IPv4 ParseError: {}",
+            slice
+        )))
     }
 }
 
@@ -64,7 +70,10 @@ impl TryFrom<&'_ [u8]> for IPv6Address {
 
     fn try_from(slice: &'_ [u8]) -> Result<Self, Self::Error> {
         if slice.len() != 16 {
-            Err(CrateError::ParseError)
+            Err(CrateError::ParseError(format!(
+                "IPv6 ParseError: {}",
+                hex::encode(slice)
+            )))
         } else {
             let mut ip = IPv6Address::default();
             for i in 0..8 {
@@ -80,7 +89,10 @@ impl TryFrom<&'_ [u16]> for IPv6Address {
 
     fn try_from(slice: &'_ [u16]) -> Result<Self, Self::Error> {
         if slice.len() != 8 {
-            Err(CrateError::ParseError)
+            Err(CrateError::ParseError(format!(
+                "ParseError: IPv6 {:?}",
+                slice
+            )))
         } else {
             let mut ip = IPv6Address::default();
             ip.0.copy_from_slice(slice);
@@ -92,8 +104,11 @@ impl TryFrom<&'_ [u16]> for IPv6Address {
 impl TryFrom<&'_ str> for IPv6Address {
     type Error = CrateError;
 
-    fn try_from(_slice: &'_ str) -> Result<Self, Self::Error> {
-        Err(CrateError::ParseError)
+    fn try_from(slice: &'_ str) -> Result<Self, Self::Error> {
+        Err(CrateError::ParseError(format!(
+            "IPv6 Parse Error: {}",
+            slice
+        )))
     }
 }
 
