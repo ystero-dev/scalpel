@@ -38,8 +38,8 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
 /// Register for a given EtherType
 ///
 /// A Layer that would handle subsequent decoding for a given Ethertype, should register itself
-/// by calling this function.
-///
+/// by calling this function. For example [`crate::layers::ipv4`] would call `register_ethertype`
+/// with [`EtherType`] value of 0x0800, passing the creator function for that layer.
 pub fn register_ethertype(eth_type: EtherType, layer: LayerCreatorFn) -> Result<(), Error> {
     lazy_static::initialize(&ETHERTYPES_MAP);
 
@@ -53,6 +53,7 @@ pub fn register_ethertype(eth_type: EtherType, layer: LayerCreatorFn) -> Result<
     Ok(())
 }
 
+/// Structure representing the Ethernet Header of a Packet.
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct Ethernet {
     src_mac: MACAddress,
@@ -62,7 +63,7 @@ pub struct Ethernet {
 }
 
 impl Ethernet {
-    pub fn creator() -> Box<dyn Layer + Send> {
+    pub(crate) fn creator() -> Box<dyn Layer + Send> {
         Box::new(Ethernet::default())
     }
 }

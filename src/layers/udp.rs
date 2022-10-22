@@ -49,6 +49,7 @@ pub fn register_app(port: u16, app: LayerCreatorFn) -> Result<(), Error> {
     Ok(())
 }
 
+/// Structure representing the UDP Header.
 #[derive(Debug, Default, Serialize)]
 pub struct UDP {
     src_port: u16,

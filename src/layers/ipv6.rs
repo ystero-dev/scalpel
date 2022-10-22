@@ -30,9 +30,11 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
     Ok(())
 }
 
-/// Register Next Header
+/// Register Next Header (Usually a Transport Porotocol).
 ///
-/// All the Protocols use this value, in addition to IPv6 Extension headers.
+/// All the Protocols use this value, in addition to IPv6 Extension headers. For example [TCP
+/// Protocol][`crate::layers::tcp`] would call this function with a header value of 6 and creator
+/// function for [`TCP`][`crate::layers::tcp::TCP`].
 pub fn register_next_header(header: u8, creator: LayerCreatorFn) -> Result<(), Error> {
     lazy_static::initialize(&NEXT_HEADERS_MAP);
 
@@ -50,6 +52,7 @@ pub fn register_next_header(header: u8, creator: LayerCreatorFn) -> Result<(), E
     Ok(())
 }
 
+/// Structure representing IPv6 Protocol Headers.
 #[derive(Debug, Default, Serialize)]
 pub struct IPv6 {
     version: u8,

@@ -31,10 +31,12 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
     Ok(())
 }
 
-/// Register a Protocol for dissection.
+/// Register a Transport Protocol for dissection.
 ///
 /// Higher level protocols should call this function to register themselves for decoding with the
-/// IPv4 Layer.
+/// IPv4 Layer. For example, [TCP Protocol][`crate::layers::tcp`] would call this function with a
+/// protocol number 6 and similarly [UDP Protocol][`crate::layers::udp`] would call this function
+/// with a protocol number of 17.
 pub fn register_protocol(proto: u8, creator: LayerCreatorFn) -> Result<(), Error> {
     lazy_static::initialize(&PROTOCOLS_MAP);
 
