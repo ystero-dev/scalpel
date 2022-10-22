@@ -9,7 +9,7 @@ use crate::layer::Layer;
 use crate::layers::ethernet;
 use crate::types::{IPv4Address, MACAddress, ETHERTYPE_ARP};
 
-/// Default Header Length for IPv4 Packets
+/// Default Header Length for ARP Packets
 pub const ARP_HDR_LENGTH: usize = 28_usize;
 
 // Register outselves with Ethernet layer
@@ -17,6 +17,7 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
     ethernet::register_ethertype(ETHERTYPE_ARP, ARP::creator)
 }
 
+/// Structure representing a dissected ARP protocol payload.
 #[derive(Debug, Default, Serialize)]
 pub struct ARP {
     #[serde(serialize_with = "crate::types::hex::serialize_upper_hex_u16")]
@@ -33,7 +34,8 @@ pub struct ARP {
 }
 
 impl ARP {
-    pub fn creator() -> Box<dyn Layer + Send> {
+    /// A function for creating a default `ARP` structure.
+    pub(crate) fn creator() -> Box<dyn Layer + Send> {
         Box::new(ARP::default())
     }
 }

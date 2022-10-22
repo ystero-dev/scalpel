@@ -36,7 +36,8 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
 /// Register An App for decoding after TCP Layer
 ///
 /// This is a public API function for an App whose dissector should be called after TCP Layer's if
-/// the Source or Destination port matches one of the ports.
+/// the Source or Destination port matches one of the ports. For example HTTP Protocol layer would
+/// register itself with port 80 with the TCP layer.
 pub fn register_app(port: u16, app: LayerCreatorFn) -> Result<(), Error> {
     lazy_static::initialize(&TCP_APPS_MAP);
 
@@ -50,6 +51,7 @@ pub fn register_app(port: u16, app: LayerCreatorFn) -> Result<(), Error> {
     Ok(())
 }
 
+/// Structure representing TCP Header
 #[derive(Debug, Default, Serialize)]
 pub struct TCP {
     src_port: u16,

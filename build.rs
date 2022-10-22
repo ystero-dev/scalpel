@@ -55,7 +55,7 @@ fn main() -> std::io::Result<()> {
     let mut output_str = String::new();
     output_str += "use std::sync::Once;";
     output_str += "static INIT: Once = Once::new();";
-    output_str += &r#"
+    output_str += r#"
 /// Register Default protocol handlers.
 ///
 /// Each [`Layer`][`crate::layer::Layer`] in `scalpel` will be decoded by a certain field in the
@@ -71,8 +71,7 @@ fn main() -> std::io::Result<()> {
 /// When a new layer is defined outside the crate, that particular layer may use a `register_*`
 /// function in it's upper layer to request it's dissection. This glues all the dissectors for the
 /// layers together.
-"#
-    .to_string();
+"#;
 
     output_str += "pub fn register_defaults() -> Result<(), crate::errors::Error> {\n\t";
 

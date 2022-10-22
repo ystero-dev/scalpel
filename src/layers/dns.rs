@@ -1,4 +1,4 @@
-//! Handling of DNS layer
+//! Handling of DNS Packets.
 
 use core::convert::TryInto;
 use core::fmt;
@@ -122,7 +122,7 @@ pub struct DNS {
 }
 
 impl DNS {
-    pub fn creator() -> Box<dyn Layer + Send> {
+    pub(crate) fn creator() -> Box<dyn Layer + Send> {
         Box::new(DNS::default())
     }
 
