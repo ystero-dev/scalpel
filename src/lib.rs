@@ -1,4 +1,4 @@
-//! A crate for dissecting and sculpting Network packets.
+//! [`scalpel`] is a crate for dissecting and sculpting network packets.
 //!
 //! Being able to dissect a stream of bytes from wire into a human or machine readable structures
 //! can be useful in many applications. `scalpel` is designed for such use cases. The functionality
@@ -8,15 +8,22 @@
 //! [go-packet]: https://github.com/google/gopacket/
 //! [ws]: https://wireshark.org
 //!
-//! The main focus of `scalpel` is to provide API based framework for dissecting packets such that
+//! The main focus of [`scalpel`] is to provide API based framework for dissecting packets such that
 //! it's possible for anyone to write a dissector for a new protocol. `scalpel` natively supports
-//! dissection for a set of widely used protocols out of the box. See [`layers`] for details.
+//! dissection for a set of widely used protocols out of the box. See [`layers`] modules for
+//! supported protocols.
 //!
 //! A Basic unit in a scalpel is a [`Packet`][`crate::packet::Packet`], a struct representing a
-//! dissected Packet from the wire, which is made up of a set of one or more `layers`.
-//! See [`Packet`][`crate::packet::Packet`] for details.
+//! dissected Packet from the wire, which is made up of a set of one or more
+//! [`layers`][`crate::layer::Layer`]. See [`Packet`][`crate::packet::Packet`] for details.
+//!
+//! ## Opt-in Features
+//! - `python-bindings`: Python bindings for the scalpel Rust API. Currently support is to
+//!                      generate [`Packet`] structure in Python.
 
 pub mod layers;
+
+#[doc(inline)]
 pub use layers::register_defaults;
 
 pub mod errors;
