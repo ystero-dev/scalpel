@@ -56,9 +56,12 @@ impl fmt::Display for DNSName {
             if x == 0 {
                 break out.as_str();
             } else {
-                out += core::str::from_utf8(&self.0[i + 1..=i + x]).unwrap();
-                out += ".";
-                i += x + 1;
+                let out_str = core::str::from_utf8(&self.0[i + 1..=i + x]);
+                if out_str.is_ok() {
+                    out += out_str.unwrap();
+                    out += ".";
+                    i += x + 1;
+                }
             }
         };
         write!(f, "{}", name)
@@ -142,6 +145,14 @@ impl DNS {
             check_remaining: bool,
         ) -> Result<usize, Error> {
             let mut i = offset;
+
+            if offset > bytes.len() {
+                return Err(Error::ParseError(format!(
+                    "Offset is : {}, remaining : {}",
+                    offset,
+                    bytes.len(),
+                )));
+            }
 
             let mut consumed = 0;
             let _ = loop {
