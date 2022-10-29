@@ -22,7 +22,7 @@ erased-serde = "0.3"
 pyo3 = { version = "0.14.5", features = ["extension-module"], optional=true}
 
 [dev-dependencies]
-criterion = "0.3"
+criterion = "0.4"
 pcap = { version = "0.11"}
 
 # Required by `cargo flamegraph`
