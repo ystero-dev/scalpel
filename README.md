@@ -1,5 +1,9 @@
 # Introduction
 
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/gabhijit/scalpel/scalpel%20build)
+[![Crates.io](https://img.shields.io/crates/v/scalpel)](https://crates.io/crates/scalpel)
+[![docs.rs](https://img.shields.io/docsrs/scalpel)](https://docs.rs/scalpel/latest/scalpel)
+
 `scalpel` is a crate for Packet Dissection and Sculpting in Rust.
 
 Scalpel can be used for dissecting packets on the wire and or generating packets from some specifications that can be sent on wire (This functionality is not being implemented at present). Goal of 'scalpel' is to be able to be able to make packet dissection API friendly so that it's easier to use it in any application. See Examples in the `examples/` directory to get an idea of what kind of 'applications' it can be used in.
