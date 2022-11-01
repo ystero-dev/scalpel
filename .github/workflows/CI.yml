@@ -1,4 +1,4 @@
-name: Scalpel Build on Pull Request.
+name: scalpel build
 
 on:
   push:
