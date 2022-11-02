@@ -113,7 +113,6 @@ impl Packet {
     /// API.
     pub fn register_encap_type(encap: EncapType, creator: LayerCreatorFn) -> Result<(), Error> {
         let mut map = ENCAP_TYPES_MAP.write().unwrap();
-        eprintln!("map: {:?}", map);
         if map.contains_key(&ENCAP_TYPE_ETH) {
             return Err(Error::RegisterError(format!("Encap: {}", encap)));
         }
@@ -296,15 +295,14 @@ mod tests {
         assert!(p.layers.len() == 4, "{:?}", p);
     }
 
-    #[ignore]
     #[test]
-    fn parse_failing_packet_1() {
+    fn parse_failing_packet() {
         use crate::layers;
         let _ = layers::register_defaults();
         let failing = hex::decode("387a0ec884c6001a9adead05080045000130eed7000037118469ca58835bc0a801200035c8d1011c169cd65e81800001000100040007046368617406676f6f676c6503636f6d00001c0001c00c001c00010000012a0010240468004002081a000000000000200ec011000200010001f0f20006036e7334c011c011000200010001f0f20006036e7331c011c011000200010001f0f20006036e7332c011c011000200010001f0f20006036e7333c011c05b000100010001fe660004d8ef200ac06d000100010001f1ce0004d8ef220ac07f0001000100021aad0004d8ef240ac05b001c00010002c4e400102001486048020032000000000000000ac06d001c00010001f1ce00102001486048020034000000000000000ac07f001c000100050db900102001486048020036000000000000000a0000291000000000000000").unwrap();
         let failing = Packet::from_bytes(&failing, ENCAP_TYPE_ETH);
 
-        assert!(failing.is_ok(), "{:?}", failing.err());
+        assert!(failing.is_err(), "{:?}", failing.ok());
     }
 
     #[ignore]
