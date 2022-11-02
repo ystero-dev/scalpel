@@ -9,8 +9,8 @@ use lazy_static::lazy_static;
 use serde::Serialize;
 
 use crate::errors::Error;
-use crate::layer::Layer;
 use crate::types::{IPv4Address, LayerCreatorFn};
+use crate::Layer;
 
 pub const IPV4_BASE_HDR_LEN: usize = 20_usize;
 

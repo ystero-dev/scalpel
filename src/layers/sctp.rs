@@ -8,10 +8,9 @@ use lazy_static::lazy_static;
 use serde::{ser::SerializeStruct as _, Serialize, Serializer};
 
 use crate::errors::Error;
-use crate::layer::Layer;
-use crate::types::LayerCreatorFn;
-
 use crate::layers::{ipv4, ipv6};
+use crate::types::LayerCreatorFn;
+use crate::Layer;
 
 lazy_static! {
     // A Map of Chunk Type to Display String
@@ -306,8 +305,7 @@ impl Layer for SCTP {
 mod tests {
 
     use crate::layers;
-    use crate::packet::Packet;
-    use crate::types::ENCAP_TYPE_ETH;
+    use crate::{Packet, ENCAP_TYPE_ETH};
 
     #[test]
     fn test_basic_sctp_decode() {

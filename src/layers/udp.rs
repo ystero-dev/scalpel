@@ -7,8 +7,8 @@ use lazy_static::lazy_static;
 use serde::Serialize;
 
 use crate::errors::Error;
-use crate::layer::Layer;
 use crate::types::LayerCreatorFn;
+use crate::Layer;
 
 use crate::layers::{ipv4, ipv6};
 

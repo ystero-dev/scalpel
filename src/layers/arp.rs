@@ -5,9 +5,9 @@ use core::convert::TryInto;
 use serde::Serialize;
 
 use crate::errors::Error;
-use crate::layer::Layer;
 use crate::layers::ethernet;
 use crate::types::{IPv4Address, MACAddress, ETHERTYPE_ARP};
+use crate::Layer;
 
 /// Default Header Length for ARP Packets
 pub const ARP_HDR_LENGTH: usize = 28_usize;
@@ -80,8 +80,7 @@ mod tests {
     #[test]
     fn parse_arp_simple() {
         use crate::layers;
-        use crate::packet::Packet;
-        use crate::types::ENCAP_TYPE_ETH;
+        use crate::{Packet, ENCAP_TYPE_ETH};
 
         let _ = layers::register_defaults();
 

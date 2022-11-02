@@ -65,6 +65,26 @@ fn main() -> std::io::Result<()> {
 /// above, EtherType in the Ethernet header determines the next layer (EtherType: 0x8000
 /// corresponds to [`ipv4::IPv4`]).
 ///
+/// To initialize the dissection framework properly, the application should call this function
+/// before trying to dissect packets. If this function is not called, all the data is shown as
+/// `unprocessed` data in the [`Packet`][`crate::Packet`]
+///
+/// ```rust
+/// # fn main() {
+///
+/// let _ = scalpel::register_defaults();
+///
+/// let packet_data =
+/// hex::decode("000573a007d168a3c4f949f686dd600000000020064020010470e5bfdead49572174e82c48872607f8b0400c0c03000000000000001af9c7001903a088300000000080022000da4700000204058c0103030801010402").unwrap();
+///
+/// let packet = scalpel::Packet::from_bytes(&packet_data, scalpel::ENCAP_TYPE_ETH);
+///
+/// eprintln!("Packet: {:#?}", packet);
+///
+/// # }
+///
+/// ```
+///
 /// In this function we just call the `register_defaults` functions for each of the currently
 /// supported layers.
 ///

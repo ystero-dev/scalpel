@@ -6,9 +6,9 @@ use core::fmt;
 use serde::{Serialize, Serializer};
 
 use crate::errors::Error;
-use crate::layer::Layer;
 use crate::layers::udp;
 use crate::types::{IPv4Address, IPv6Address};
+use crate::Layer;
 
 #[derive(Default, Debug, Serialize)]
 pub struct DNSSOA {
@@ -406,8 +406,7 @@ impl Layer for DNS {
 mod tests {
 
     use crate::layers;
-    use crate::packet::Packet;
-    use crate::types::ENCAP_TYPE_ETH;
+    use crate::{Layer, Packet, ENCAP_TYPE_ETH};
 
     #[test]
     fn parse_valid_dns_packet() {
@@ -446,7 +445,7 @@ mod tests {
             0x00, 0x04, 0xd8, 0xef, 0x26, 0x0a, /* ....&. */
         ];
 
-        let mut dns: Box<dyn crate::layer::Layer> = Box::new(super::DNS::default());
+        let mut dns: Box<dyn Layer> = Box::new(super::DNS::default());
 
         let p = dns.decode_bytes(&dns_query[42..]);
         assert!(p.is_ok(), "{:#?}", dns);

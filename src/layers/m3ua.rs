@@ -7,7 +7,7 @@ use core::convert::TryInto;
 use serde::Serialize;
 
 use crate::errors::Error;
-use crate::layer::Layer;
+use crate::Layer;
 
 use crate::layers::sctp;
 
