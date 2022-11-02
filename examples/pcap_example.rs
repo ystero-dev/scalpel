@@ -11,7 +11,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cap = Capture::from_device(device)?.immediate_mode(true).open()?;
 
     while let Ok(packet) = cap.next_packet() {
-        let p = scalpel::packet::Packet::from_bytes(&packet.data, scalpel::types::ENCAP_TYPE_ETH);
+        let p = scalpel::Packet::from_bytes(&packet.data, scalpel::ENCAP_TYPE_ETH);
         match p {
             Ok(p) => println!("{}", serde_json::to_string_pretty(&p).unwrap()),
             Err(e) => {

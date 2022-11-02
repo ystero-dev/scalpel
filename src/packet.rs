@@ -10,8 +10,8 @@ use lazy_static::lazy_static;
 use serde::{ser::SerializeStruct, Serialize, Serializer};
 
 use crate::errors::Error;
-use crate::layer::Layer;
 use crate::types::{EncapType, LayerCreatorFn, ENCAP_TYPE_ETH};
+use crate::Layer;
 
 #[cfg(feature = "python-bindings")]
 use pyo3::prelude::*;
@@ -33,7 +33,7 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
     Ok(())
 }
 
-/// [`Packet`] is a central structure in `scalpel` containing the decoded data and some metadata.
+/// `Packet` is a structure in `scalpel` containing the decoded data and some metadata.
 ///
 /// When a byte-stream is 'dissected' by scalpel, it creates a `Packet` structure that contains the
 /// following information.
