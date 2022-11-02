@@ -44,7 +44,6 @@ pub fn register_ethertype(eth_type: EtherType, layer: LayerCreatorFn) -> Result<
     lazy_static::initialize(&ETHERTYPES_MAP);
 
     let mut map = ETHERTYPES_MAP.write().unwrap();
-    eprintln!("ethertypes: {:?}", map);
     if map.contains_key(&eth_type) {
         return Err(Error::RegisterError(format!("ether_type: {}", eth_type)));
     }
