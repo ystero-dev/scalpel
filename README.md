@@ -1,6 +1,6 @@
 # Introduction
 
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/gabhijit/scalpel/scalpel%20build)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/gabhijit/scalpel/CI.yml?branch=master)](https://github.com/gabhijit/scalpel/actions/workflows/CI.yml)
 [![Crates.io](https://img.shields.io/crates/v/scalpel)](https://crates.io/crates/scalpel)
 [![docs.rs](https://img.shields.io/docsrs/scalpel)](https://docs.rs/scalpel/latest/scalpel)
 
