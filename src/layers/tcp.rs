@@ -69,7 +69,7 @@ pub struct TCP {
 
 impl TCP {
     pub fn creator() -> Box<dyn Layer + Send> {
-        Box::new(TCP::default())
+        Box::<TCP>::default()
     }
 }
 

@@ -36,7 +36,7 @@ pub struct ARP {
 impl ARP {
     /// A function for creating a default `ARP` structure.
     pub(crate) fn creator() -> Box<dyn Layer + Send> {
-        Box::new(ARP::default())
+        Box::<ARP>::default()
     }
 }
 

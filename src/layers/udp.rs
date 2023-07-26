@@ -59,7 +59,7 @@ pub struct UDP {
 
 impl UDP {
     pub fn creator() -> Box<dyn Layer + Send> {
-        Box::new(UDP::default())
+        Box::<UDP>::default()
     }
 }
 
