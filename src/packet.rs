@@ -135,8 +135,7 @@ impl Packet {
             let map = ENCAP_TYPES_MAP.read().unwrap();
             let creator_fn = map.get(&encap);
             if creator_fn.is_none() {
-                let new: Vec<_> = bytes.into();
-                let _ = core::mem::replace(&mut p.unprocessed, new);
+                let _ = core::mem::replace(&mut p.unprocessed, bytes.into());
 
                 return Ok(p);
             }

@@ -57,8 +57,8 @@ impl fmt::Display for DNSName {
                 break out.as_str();
             } else {
                 let out_str = core::str::from_utf8(&self.0[i + 1..=i + x]);
-                if out_str.is_ok() {
-                    out += out_str.unwrap();
+                if let Ok(out_str) = out_str {
+                    out += out_str;
                     out += ".";
                     i += x + 1;
                 }
@@ -126,7 +126,7 @@ pub struct DNS {
 
 impl DNS {
     pub(crate) fn creator() -> Box<dyn Layer + Send> {
-        Box::new(DNS::default())
+        Box::<DNS>::default()
     }
 
     // A Name needs to be dissected recursively by looking at previous occurence of a name

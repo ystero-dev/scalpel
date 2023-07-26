@@ -67,7 +67,7 @@ pub struct IPv6 {
 
 impl IPv6 {
     pub fn creator() -> Box<dyn Layer + Send> {
-        Box::new(IPv6::default())
+        Box::<IPv6>::default()
     }
 }
 

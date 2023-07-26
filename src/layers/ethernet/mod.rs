@@ -60,7 +60,7 @@ pub struct Ethernet {
 
 impl Ethernet {
     pub(crate) fn creator() -> Box<dyn Layer + Send> {
-        Box::new(Ethernet::default())
+        Box::<Ethernet>::default()
     }
 }
 

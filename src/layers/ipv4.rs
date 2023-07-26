@@ -68,7 +68,7 @@ pub struct IPv4 {
 
 impl IPv4 {
     pub fn creator() -> Box<dyn Layer + Send> {
-        Box::new(IPv4::default())
+        Box::<IPv4>::default()
     }
 }
 

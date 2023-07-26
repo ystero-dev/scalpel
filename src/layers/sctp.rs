@@ -177,7 +177,7 @@ pub struct SCTP {
 
 impl SCTP {
     pub fn creator() -> Box<dyn Layer + Send> {
-        Box::new(SCTP::default())
+        Box::<SCTP>::default()
     }
 
     fn process_chunk_header(bytes: &[u8]) -> Result<SCTPChunkHeader, Error> {

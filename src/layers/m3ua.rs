@@ -32,7 +32,7 @@ pub struct M3UA {
 
 impl M3UA {
     pub fn creator() -> Box<dyn Layer + Send> {
-        Box::new(M3UA::default())
+        Box::<M3UA>::default()
     }
 }
 
