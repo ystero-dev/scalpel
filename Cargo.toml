@@ -24,6 +24,7 @@ pyo3 = { version = "0.20", features = ["extension-module"], optional=true}
 [dev-dependencies]
 criterion = "0.5"
 pcap = { version = "0.11"}
+clap = { version = "4.0" , features = ["derive"] }
 
 # Required by `cargo flamegraph`
 [profile.bench]
