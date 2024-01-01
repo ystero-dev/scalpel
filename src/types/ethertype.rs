@@ -1,4 +1,4 @@
-///! EtherType structure and definition of Well Known EtherTypes
+/// EtherType structure and definition of Well Known EtherTypes
 ///
 pub type EtherType = u16;
 

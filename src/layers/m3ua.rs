@@ -72,7 +72,7 @@ impl Layer for M3UA {
         }
 
         let data_len = self.msg_length - 8;
-        self.msg_data = bytes[start..start + data_len as usize].try_into().unwrap();
+        self.msg_data = bytes[start..start + data_len as usize].into();
 
         Ok((None, self.msg_length as usize))
     }

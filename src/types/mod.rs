@@ -21,6 +21,10 @@ pub type LayerCreatorFn = fn() -> Box<dyn Layer + Send>;
 /// This value is same as those supported by [libpcap][libpcap]
 ///
 /// [libpcap]: https://www.tcpdump.org/
-pub type EncapType = u8;
+pub type EncapType = u16;
 
-pub static ENCAP_TYPE_ETH: EncapType = 1_u8;
+pub static ENCAP_TYPE_ETH: EncapType = 1;
+
+pub static ENCAP_TYPE_LINUX_SLL: EncapType = 113;
+
+pub static ENCAP_TYPE_LINUX_SLL2: EncapType = 276;

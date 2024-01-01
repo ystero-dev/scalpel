@@ -204,6 +204,7 @@ mod tests {
     use crate::layers::ipv4::IPV4_BASE_HDR_LEN;
     use crate::layers::ipv6::IPV6_BASE_HDR_LEN;
     use crate::layers::tcp::TCP_BASE_HDR_LEN;
+    use crate::ENCAP_TYPE_LINUX_SLL;
 
     #[test]
     fn from_bytes_fail_too_short() {
@@ -313,5 +314,16 @@ mod tests {
         let failing = Packet::from_bytes(&failing, ENCAP_TYPE_ETH);
 
         assert!(failing.is_ok(), "{:?}", failing.err());
+    }
+
+    #[ignore]
+    #[test]
+    fn parse_failing_packet_3() {
+        use crate::layers;
+        let _ = layers::register_defaults();
+        let failing = hex::decode("00000304000600000000000000000800450000c01b0b400001115fec7f0000357f0000010035dd3600acfef3c8218180000100020004000108697076346f6e6c7904617270610000010001c00c00010001000017210004c00000aac00c00010001000017210004c00000abc00c0002000100001721001401620c69616e612d73657276657273036e657400c00c000200010000172100040161c04dc00c000200010000172100040163c04dc00c0002000100001721000e026e73056963616e6e036f726700000029ffd6000000000000").unwrap();
+        let failing = Packet::from_bytes(&failing, ENCAP_TYPE_LINUX_SLL);
+
+        assert!(failing.is_err(), "{:?}", failing.ok());
     }
 }
