@@ -20,7 +20,7 @@ lazy_static! {
     ///
     /// The creator function simply creates a `default` L3 struct that implements the dissector
     /// for the Layer.
-    static ref ETHERTYPES_MAP: RwLock<HashMap<EtherType, LayerCreatorFn>> =
+    pub(crate) static ref ETHERTYPES_MAP: RwLock<HashMap<EtherType, LayerCreatorFn>> =
         RwLock::new(HashMap::new());
 
 }

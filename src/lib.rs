@@ -48,7 +48,7 @@ pub use layer::Layer;
 pub use packet::Packet;
 
 #[doc(inline)]
-pub use types::ENCAP_TYPE_ETH;
+pub use types::{ENCAP_TYPE_ETH, ENCAP_TYPE_LINUX_SLL, ENCAP_TYPE_LINUX_SLL2};
 
 #[cfg(feature = "python-bindings")]
 use pyo3::prelude::*;
