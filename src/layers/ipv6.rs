@@ -77,10 +77,11 @@ impl Layer for IPv6 {
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         if bytes.len() < IPV6_BASE_HDR_LEN {
-            return Err(Error::ParseError(format!(
-                "IPv6: Insufficient Length: {}",
-                bytes.len()
-            )));
+            return Err(Error::TooShort {
+                required: IPV6_BASE_HDR_LEN,
+                available: bytes.len(),
+                data: hex::encode(bytes),
+            });
         }
 
         self.version = bytes[0] >> 4;

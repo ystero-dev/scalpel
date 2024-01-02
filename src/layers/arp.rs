@@ -46,10 +46,11 @@ impl Layer for ARP {
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         if bytes.len() < ARP_HDR_LENGTH {
-            return Err(Error::ParseError(format!(
-                "ARP Insufficient Length: {}",
-                bytes.len()
-            )));
+            return Err(Error::TooShort {
+                required: ARP_HDR_LENGTH,
+                available: bytes.len(),
+                data: hex::encode(bytes),
+            });
         }
 
         self.htype = (bytes[0] as u16) << 8 | (bytes[1] as u16);

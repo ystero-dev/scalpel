@@ -182,7 +182,11 @@ impl SCTP {
 
     fn process_chunk_header(bytes: &[u8]) -> Result<SCTPChunkHeader, Error> {
         if bytes.len() < 4 {
-            return Err(Error::TooShort);
+            return Err(Error::TooShort {
+                required: 4,
+                available: bytes.len(),
+                data: hex::encode(bytes),
+            });
         }
 
         let chunk_type = bytes[0];
