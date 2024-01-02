@@ -10,7 +10,7 @@ use lazy_static::lazy_static;
 use serde::{ser::SerializeStruct, Serialize, Serializer};
 
 use crate::errors::Error;
-use crate::types::{EncapType, LayerCreatorFn, ENCAP_TYPE_ETH};
+use crate::types::{EncapType, LayerCreatorFn};
 use crate::Layer;
 
 #[cfg(feature = "python-bindings")]
@@ -113,7 +113,7 @@ impl Packet {
     /// API.
     pub fn register_encap_type(encap: EncapType, creator: LayerCreatorFn) -> Result<(), Error> {
         let mut map = ENCAP_TYPES_MAP.write().unwrap();
-        if map.contains_key(&ENCAP_TYPE_ETH) {
+        if map.contains_key(&encap) {
             return Err(Error::RegisterError(format!("Encap: {}", encap)));
         }
         map.insert(encap, creator);
@@ -204,7 +204,7 @@ mod tests {
     use crate::layers::ipv4::IPV4_BASE_HDR_LEN;
     use crate::layers::ipv6::IPV6_BASE_HDR_LEN;
     use crate::layers::tcp::TCP_BASE_HDR_LEN;
-    use crate::ENCAP_TYPE_LINUX_SLL;
+    use crate::{ENCAP_TYPE_ETH, ENCAP_TYPE_LINUX_SLL};
 
     #[test]
     fn from_bytes_fail_too_short() {
@@ -293,6 +293,13 @@ mod tests {
         assert!(p.is_ok(), "{:?}", p.err());
         let p = p.unwrap();
         assert!(p.layers.len() == 4, "{:?}", p);
+    }
+
+    #[ignore]
+    #[test]
+    fn always_fail_ignore() {
+        let register_defaults = include_str!(concat!(env!("OUT_DIR"), "/register_defaults.rs"));
+        assert!(false, "{}", register_defaults);
     }
 
     #[test]
