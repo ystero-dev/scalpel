@@ -70,7 +70,11 @@ impl Layer for Ethernet {
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         if bytes.len() < ETH_HEADER_LEN {
-            return Err(Error::TooShort);
+            return Err(Error::TooShort {
+                required: ETH_HEADER_LEN,
+                available: bytes.len(),
+                data: hex::encode(bytes),
+            });
         }
         self.src_mac = bytes[0..6].try_into()?;
         self.dst_mac = bytes[6..12].try_into()?;

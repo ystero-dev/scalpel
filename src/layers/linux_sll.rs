@@ -37,7 +37,11 @@ impl Layer for LinuxSll {
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         if bytes.len() < LINUX_SLL_HEADER_LEN {
-            return Err(Error::TooShort);
+            return Err(Error::TooShort {
+                required: LINUX_SLL_HEADER_LEN,
+                available: bytes.len(),
+                data: hex::encode(bytes),
+            });
         }
         self.packet_type = u16::from_be_bytes(bytes[0..2].try_into().unwrap());
         self.ll_type = u16::from_be_bytes(bytes[2..4].try_into().unwrap());

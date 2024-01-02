@@ -4,7 +4,11 @@
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     /// Byte Array too short
-    TooShort,
+    TooShort {
+        required: usize,
+        available: usize,
+        data: String,
+    },
     /// A generic parsing error.
     ParseError(String),
     /// A layer registration error.

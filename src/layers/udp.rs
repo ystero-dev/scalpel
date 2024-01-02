@@ -69,7 +69,11 @@ impl Layer for UDP {
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         if bytes.len() < UDP_HDR_LEN {
-            return Err(Error::TooShort);
+            return Err(Error::TooShort {
+                required: UDP_HDR_LEN,
+                available: bytes.len(),
+                data: hex::encode(bytes),
+            });
         }
 
         self.src_port = (bytes[0] as u16) << 8 | (bytes[1] as u16);

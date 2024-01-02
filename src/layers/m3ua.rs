@@ -42,7 +42,11 @@ impl Layer for M3UA {
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
         if bytes.len() < 8 {
-            return Err(Error::TooShort);
+            return Err(Error::TooShort {
+                required: 8,
+                available: bytes.len(),
+                data: hex::encode(bytes),
+            });
         }
 
         let mut start = 0;
@@ -68,7 +72,11 @@ impl Layer for M3UA {
         self.msg_length = u32::from_be_bytes(bytes[start..start + 4].try_into().unwrap());
 
         if bytes.len() < self.msg_length as usize {
-            return Err(Error::TooShort);
+            return Err(Error::TooShort {
+                required: self.msg_length as usize,
+                available: bytes.len(),
+                data: hex::encode(bytes),
+            });
         }
 
         let data_len = self.msg_length - 8;

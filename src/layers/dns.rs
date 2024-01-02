@@ -182,7 +182,11 @@ impl DNS {
                         let count = bytes[i] as usize + 1_usize;
                         if check_remaining {
                             if remaining < count {
-                                return Err(Error::TooShort);
+                                return Err(Error::TooShort {
+                                    required: count,
+                                    available: remaining,
+                                    data: hex::encode(&bytes[i..]),
+                                });
                             }
                             consumed += count;
                             remaining -= count;
@@ -221,7 +225,11 @@ impl DNS {
         offset += consumed;
 
         if remaining < 10 {
-            return Err(Error::TooShort);
+            return Err(Error::TooShort {
+                required: 10,
+                available: remaining,
+                data: hex::encode(&bytes[i..]),
+            });
         }
 
         let type_ = (bytes[offset] as u16) << 8 | (bytes[offset + 1] as u16);
@@ -231,10 +239,14 @@ impl DNS {
             | (bytes[offset + 6] as u32) << 8
             | (bytes[offset + 7] as u32);
         let rdlength = (bytes[offset + 8] as u16) << 8 | (bytes[offset + 9] as u16);
-        if remaining < (rdlength as usize) {
-            return Err(Error::TooShort);
-        }
         offset += 10;
+        if remaining < (rdlength as usize) {
+            return Err(Error::TooShort {
+                required: rdlength as usize,
+                available: remaining,
+                data: hex::encode(&bytes[offset..]),
+            });
+        }
         let rdata_buffer = &bytes[offset..offset + rdlength as usize];
 
         i += 10 + rdlength as usize;
@@ -256,7 +268,11 @@ impl DNS {
                 i += consumed;
                 remaining -= consumed;
                 if remaining < 20 {
-                    return Err(Error::TooShort);
+                    return Err(Error::TooShort {
+                        required: 20,
+                        available: remaining,
+                        data: hex::encode(&bytes[i..]),
+                    });
                 }
                 // serial, refresh, retry, expire, minimum
                 let serial = (bytes[i] as u32) << 24
@@ -361,7 +377,11 @@ impl Layer for DNS {
         let mut decoded;
 
         if bytes.len() < 12 {
-            return Err(Error::TooShort);
+            return Err(Error::TooShort {
+                required: 12,
+                available: bytes.len(),
+                data: hex::encode(bytes),
+            });
         }
 
         //self.id = U16Hex((bytes[0] as u16) << 8 | (bytes[1] as u16));
