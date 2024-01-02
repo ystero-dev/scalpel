@@ -106,6 +106,10 @@ fn main() -> std::io::Result<()> {
     output_str += "INIT.call_once(|| { ";
     output_str += "result = inner();";
 
+    output_str += r#" if let Err(ref e) = result {
+    eprintln!("Error : {:#?}", e);
+    }"#;
+
     output_str += "});";
     output_str += "\n\n\tresult\n";
     output_str += "}";
