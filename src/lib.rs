@@ -27,6 +27,10 @@
 //! ## Opt-in Features
 //! - `python-bindings`: Python bindings for the scalpel Rust API. Currently support is to
 //!                      generate [`Packet`] structure in Python.
+//! - `logging`: Enable logging during decoding the packets. Since, packet dissection is usually
+//!              done in the fast, path, use this feature mainly for debugging packet dissections.
+//!              an error log is provided for the failing `register_defaults` function when this
+//!              feature is enabled.
 
 pub mod layers;
 
