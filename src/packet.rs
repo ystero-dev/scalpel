@@ -143,6 +143,9 @@ impl Packet {
             l2 = creator_fn.unwrap()();
         }
 
+        #[cfg(feature = "logging")]
+        log::debug!("L2 in packet: {}", l2.short_name());
+
         let mut current_layer = l2;
         let mut res: (Option<Box<dyn Layer + Send>>, usize);
         let mut start = 0;
@@ -166,6 +169,10 @@ impl Packet {
         if start != bytes.len() {
             let _ = core::mem::replace(&mut p.unprocessed, bytes[start..].to_vec());
         }
+
+        #[cfg(features = "logging")]
+        log::debug!("Decoded packet: {:#?}", p);
+
         Ok(p)
     }
 }

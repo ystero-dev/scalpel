@@ -107,6 +107,9 @@ fn main() -> std::io::Result<()> {
     output_str += "result = inner();";
 
     output_str += r#" if let Err(ref e) = result {
+    #[cfg(feature = "logging")]
+    log::error!("Error during register_defaults: {:#?}", e);
+
     eprintln!("Error : {:#?}", e);
     }"#;
 
