@@ -13,7 +13,7 @@ use crate::errors::Error;
 use crate::types::{EtherType, LayerCreatorFn, MACAddress};
 use crate::{Layer, Packet, ENCAP_TYPE_ETH};
 
-pub const ETH_HEADER_LEN: usize = 14_usize;
+pub const ETH_HEADER_LENGTH: usize = 14_usize;
 
 lazy_static! {
     /// A Map maintaining EtherType -> Creator fns for Layer Creators of L3 Layers.
@@ -69,9 +69,9 @@ impl Layer for Ethernet {
         &mut self,
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
-        if bytes.len() < ETH_HEADER_LEN {
+        if bytes.len() < ETH_HEADER_LENGTH {
             return Err(Error::TooShort {
-                required: ETH_HEADER_LEN,
+                required: ETH_HEADER_LENGTH,
                 available: bytes.len(),
                 data: hex::encode(bytes),
             });
@@ -83,8 +83,8 @@ impl Layer for Ethernet {
         let map = ETHERTYPES_MAP.read().unwrap();
         let layer = map.get(&self.ethertype);
         match layer {
-            None => Ok((None, ETH_HEADER_LEN)),
-            Some(l3_creator) => Ok((Some(l3_creator()), ETH_HEADER_LEN)),
+            None => Ok((None, ETH_HEADER_LENGTH)),
+            Some(l3_creator) => Ok((Some(l3_creator()), ETH_HEADER_LENGTH)),
         }
     }
 

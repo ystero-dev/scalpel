@@ -207,10 +207,10 @@ mod tests {
     use hex;
 
     use crate::layers;
-    use crate::layers::ethernet::ETH_HEADER_LEN;
-    use crate::layers::ipv4::IPV4_BASE_HDR_LEN;
-    use crate::layers::ipv6::IPV6_BASE_HDR_LEN;
-    use crate::layers::tcp::TCP_BASE_HDR_LEN;
+    use crate::layers::ethernet::ETH_HEADER_LENGTH;
+    use crate::layers::ipv4::IPV4_BASE_HEADER_LENGTH;
+    use crate::layers::ipv6::IPV6_BASE_HEADER_LENGTH;
+    use crate::layers::tcp::TCP_BASE_HEADER_LENGTH;
     use crate::{ENCAP_TYPE_ETH, ENCAP_TYPE_LINUX_SLL};
 
     #[test]
@@ -246,7 +246,8 @@ mod tests {
         let p = p.unwrap();
         assert!(p.layers.len() == 3, "{:?}", p);
         assert!(
-            p.unprocessed.len() == (len - (ETH_HEADER_LEN + IPV4_BASE_HDR_LEN + TCP_BASE_HDR_LEN)),
+            p.unprocessed.len()
+                == (len - (ETH_HEADER_LENGTH + IPV4_BASE_HEADER_LENGTH + TCP_BASE_HEADER_LENGTH)),
             "{}:{}:{:#?}",
             len,
             p.unprocessed.len(),
@@ -269,7 +270,8 @@ mod tests {
         let p = p.unwrap();
         assert!(p.layers.len() == 3, "{:?}", p);
         assert!(
-            p.unprocessed.len() == (len - (ETH_HEADER_LEN + IPV6_BASE_HDR_LEN + TCP_BASE_HDR_LEN)),
+            p.unprocessed.len()
+                == (len - (ETH_HEADER_LENGTH + IPV6_BASE_HEADER_LENGTH + TCP_BASE_HEADER_LENGTH)),
             "{}:{}:{:#?}",
             len,
             p.unprocessed.len(),

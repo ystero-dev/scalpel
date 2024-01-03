@@ -17,7 +17,7 @@ lazy_static! {
 }
 
 /// UDP header length
-pub const UDP_HDR_LEN: usize = 8_usize;
+pub const UDP_HEADER_LENGTH: usize = 8_usize;
 /// IANA Assigned protocol number for UDP
 pub const IPPROTO_UDP: u8 = 17_u8;
 
@@ -68,9 +68,9 @@ impl Layer for UDP {
         &mut self,
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
-        if bytes.len() < UDP_HDR_LEN {
+        if bytes.len() < UDP_HEADER_LENGTH {
             return Err(Error::TooShort {
-                required: UDP_HDR_LEN,
+                required: UDP_HEADER_LENGTH,
                 available: bytes.len(),
                 data: hex::encode(bytes),
             });
@@ -82,9 +82,9 @@ impl Layer for UDP {
         self.checksum = (bytes[6] as u16) << 8 | (bytes[7] as u16);
 
         let map = UDP_APPS_MAP.read().unwrap();
-        let app = map.get(&self.dst_port).or_else(|| map.get(&self.src_port));
 
-        Ok((app.map(|creator_fn| creator_fn()), UDP_HDR_LEN))
+        let app = map.get(&self.dst_port).or_else(|| map.get(&self.src_port));
+        Ok((app.map(|creator_fn| creator_fn()), UDP_HEADER_LENGTH))
     }
 
     fn name(&self) -> &'static str {

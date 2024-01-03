@@ -18,7 +18,7 @@ lazy_static! {
 }
 
 /// TCP header length
-pub const TCP_BASE_HDR_LEN: usize = 20_usize;
+pub const TCP_BASE_HEADER_LENGTH: usize = 20_usize;
 
 /// IANA Assigned protocol number for TCP
 pub const IPPROTO_TCP: u8 = 6_u8;
@@ -78,9 +78,9 @@ impl Layer for TCP {
         &mut self,
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
-        if bytes.len() < TCP_BASE_HDR_LEN {
+        if bytes.len() < TCP_BASE_HEADER_LENGTH {
             return Err(Error::TooShort {
-                required: TCP_BASE_HDR_LEN,
+                required: TCP_BASE_HEADER_LENGTH,
                 available: bytes.len(),
                 data: hex::encode(bytes),
             });
@@ -99,7 +99,7 @@ impl Layer for TCP {
         let map = TCP_APPS_MAP.read().unwrap();
         let app = map.get(&self.dst_port).or_else(|| map.get(&self.src_port));
 
-        Ok((app.map(|creator_fn| creator_fn()), TCP_BASE_HDR_LEN))
+        Ok((app.map(|creator_fn| creator_fn()), TCP_BASE_HEADER_LENGTH))
     }
 
     fn name(&self) -> &'static str {

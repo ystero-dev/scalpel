@@ -9,7 +9,7 @@ use crate::Layer;
 use crate::layers::{ethernet, udp};
 
 /// VXLAN header length
-pub const VXLAN_HDR_LEN: usize = 8_usize;
+pub const VXLAN_HEADER_LENGTH: usize = 8_usize;
 
 /// IANA Assigned port number for VXLAN
 pub const VXLAN_PORT: u16 = 4789;
@@ -41,9 +41,9 @@ impl Layer for VXLAN {
         &mut self,
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
-        if bytes.len() < VXLAN_HDR_LEN {
+        if bytes.len() < VXLAN_HEADER_LENGTH {
             return Err(Error::TooShort {
-                required: VXLAN_HDR_LEN,
+                required: VXLAN_HEADER_LENGTH,
                 available: bytes.len(),
                 data: hex::encode(bytes),
             });
@@ -52,7 +52,7 @@ impl Layer for VXLAN {
         self.vni = ((u16::from_be_bytes(bytes[4..6].try_into().unwrap()) as u32) << 8)
             | (u8::from_be(bytes[6]) as u32);
 
-        Ok((Some(ethernet::Ethernet::creator()), VXLAN_HDR_LEN))
+        Ok((Some(ethernet::Ethernet::creator()), VXLAN_HEADER_LENGTH))
     }
 
     fn name(&self) -> &'static str {

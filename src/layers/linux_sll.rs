@@ -23,7 +23,7 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
     Packet::register_encap_type(ENCAP_TYPE_LINUX_SLL, LinuxSll::creator)
 }
 
-const LINUX_SLL_HEADER_LEN: usize = 16_usize;
+const LINUX_SLL_HEADER_LENGTH: usize = 16_usize;
 
 impl LinuxSll {
     pub(crate) fn creator() -> Box<dyn Layer + Send> {
@@ -36,9 +36,9 @@ impl Layer for LinuxSll {
         &mut self,
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
-        if bytes.len() < LINUX_SLL_HEADER_LEN {
+        if bytes.len() < LINUX_SLL_HEADER_LENGTH {
             return Err(Error::TooShort {
-                required: LINUX_SLL_HEADER_LEN,
+                required: LINUX_SLL_HEADER_LENGTH,
                 available: bytes.len(),
                 data: hex::encode(bytes),
             });
@@ -52,8 +52,8 @@ impl Layer for LinuxSll {
         let map = ETHERTYPES_MAP.read().unwrap();
         let layer = map.get(&self.protocol);
         match layer {
-            None => Ok((None, LINUX_SLL_HEADER_LEN)),
-            Some(l3_creator) => Ok((Some(l3_creator()), LINUX_SLL_HEADER_LEN)),
+            None => Ok((None, LINUX_SLL_HEADER_LENGTH)),
+            Some(l3_creator) => Ok((Some(l3_creator()), LINUX_SLL_HEADER_LENGTH)),
         }
     }
 

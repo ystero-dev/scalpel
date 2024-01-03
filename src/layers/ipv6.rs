@@ -12,7 +12,8 @@ use crate::errors::Error;
 use crate::types::{IPv6Address, LayerCreatorFn};
 use crate::Layer;
 
-pub const IPV6_BASE_HDR_LEN: usize = 40_usize;
+/// Basic Length of the IPv6 Header
+pub const IPV6_BASE_HEADER_LENGTH: usize = 40_usize;
 
 lazy_static! {
     static ref NEXT_HEADERS_MAP: RwLock<HashMap<u8, LayerCreatorFn>> = RwLock::new(HashMap::new());
@@ -76,9 +77,9 @@ impl Layer for IPv6 {
         &mut self,
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
-        if bytes.len() < IPV6_BASE_HDR_LEN {
+        if bytes.len() < IPV6_BASE_HEADER_LENGTH {
             return Err(Error::TooShort {
-                required: IPV6_BASE_HDR_LEN,
+                required: IPV6_BASE_HEADER_LENGTH,
                 available: bytes.len(),
                 data: hex::encode(bytes),
             });
@@ -96,8 +97,8 @@ impl Layer for IPv6 {
         let map = NEXT_HEADERS_MAP.read().unwrap();
         let layer = map.get(&self.next_hdr);
         match layer {
-            None => Ok((None, IPV6_BASE_HDR_LEN)),
-            Some(next_layer_creator) => Ok((Some(next_layer_creator()), IPV6_BASE_HDR_LEN)),
+            None => Ok((None, IPV6_BASE_HEADER_LENGTH)),
+            Some(next_layer_creator) => Ok((Some(next_layer_creator()), IPV6_BASE_HEADER_LENGTH)),
         }
     }
 
