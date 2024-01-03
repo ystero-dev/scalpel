@@ -52,10 +52,13 @@ fn main() -> std::io::Result<()> {
         }
     }
 
-    let mut output_str = String::new();
-    output_str += "use std::sync::Once;";
-    output_str += "static INIT: Once = Once::new();";
-    output_str += r#"
+    let output_str = format!(
+        r#"
+
+use std::sync::Once;
+
+static INIT: Once = Once::new();
+
 /// Register Default protocol handlers.
 ///
 /// Each [`Layer`][`crate::layer::Layer`] in `scalpel` will be decoded by a certain field in the
@@ -70,7 +73,7 @@ fn main() -> std::io::Result<()> {
 /// `unprocessed` data in the [`Packet`][`crate::Packet`]
 ///
 /// ```rust
-/// # fn main() {
+/// # fn main() {{
 ///
 /// let _ = scalpel::register_defaults();
 ///
@@ -79,9 +82,9 @@ fn main() -> std::io::Result<()> {
 ///
 /// let packet = scalpel::Packet::from_bytes(&packet_data, scalpel::ENCAP_TYPE_ETH);
 ///
-/// eprintln!("Packet: {:#?}", packet);
+/// eprintln!("Packet: {{:#?}}", packet);
 ///
-/// # }
+/// # }}
 ///
 /// ```
 ///
@@ -91,31 +94,39 @@ fn main() -> std::io::Result<()> {
 /// When a new layer is defined outside the crate, that particular layer may use a `register_*`
 /// function in it's upper layer to request it's dissection. This glues all the dissectors for the
 /// layers together.
-"#;
 
-    output_str += "pub fn register_defaults() -> Result<(), crate::errors::Error> {\n\t";
+pub fn register_defaults() -> Result<(), crate::errors::Error> {{
 
-    output_str += "let mut result: Result<(), crate::errors::Error> = Ok(());";
+    let mut result: Result<(), crate::errors::Error> = Ok(());
 
-    output_str += "fn inner() -> Result<(), crate::errors::Error> {";
-    // We need to make sure `packet::register_defaults` is initialized first.
-    output_str += "\n\tcrate::packet::register_defaults()?;\n\t";
-    output_str += &reg_defaults.join("\n\t");
-    output_str += "Ok(())";
-    output_str += "}";
-    output_str += "INIT.call_once(|| { ";
-    output_str += "result = inner();";
+    fn inner() -> Result<(), crate::errors::Error> {{
+        // We need to make sure `packet::register_defaults` is initialized first.
+        crate::packet::register_defaults()?;
 
-    output_str += r#" if let Err(ref e) = result {
-    #[cfg(feature = "logging")]
-    log::error!("Error during register_defaults: {:#?}", e);
+        // Now all the layers' `register_defaults`
+        {layers_reg_defaults}
 
-    eprintln!("Error : {:#?}", e);
-    }"#;
+        Ok(())
+    }}
 
-    output_str += "});";
-    output_str += "\n\n\tresult\n";
-    output_str += "}";
+    INIT.call_once(|| {{
+        result = inner();
+
+        if let Err(ref e) = result {{
+
+            #[cfg(feature = "logging")]
+            log::error!("Error during register_defaults: {{:#?}}", e);
+
+            eprintln!("Error : {{:#?}}", e);
+        }}
+
+    }});
+
+    result
+
+}}"#,
+        layers_reg_defaults = reg_defaults.join("\n")
+    );
 
     let output_path = PathBuf::from(env::var("OUT_DIR").unwrap());
     let outfile_path = output_path.join("register_defaults.rs");
