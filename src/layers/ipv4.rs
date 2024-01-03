@@ -12,7 +12,8 @@ use crate::errors::Error;
 use crate::types::{IPv4Address, LayerCreatorFn};
 use crate::Layer;
 
-pub const IPV4_BASE_HDR_LEN: usize = 20_usize;
+/// Basic Length of the IPv4 Header when no options are present
+pub const IPV4_BASE_HEADER_LENGTH: usize = 20_usize;
 
 lazy_static! {
     static ref PROTOCOLS_MAP: RwLock<HashMap<u8, LayerCreatorFn>> = RwLock::new(HashMap::new());
@@ -102,8 +103,8 @@ impl Layer for IPv4 {
         let map = PROTOCOLS_MAP.read().unwrap();
         let layer = map.get(&self.proto);
         match layer {
-            None => Ok((None, IPV4_BASE_HDR_LEN)),
-            Some(l4_creator) => Ok((Some(l4_creator()), IPV4_BASE_HDR_LEN)),
+            None => Ok((None, IPV4_BASE_HEADER_LENGTH)),
+            Some(l4_creator) => Ok((Some(l4_creator()), IPV4_BASE_HEADER_LENGTH)),
         }
     }
 

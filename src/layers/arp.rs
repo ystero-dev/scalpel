@@ -10,7 +10,7 @@ use crate::types::{IPv4Address, MACAddress, ETHERTYPE_ARP};
 use crate::Layer;
 
 /// Default Header Length for ARP Packets
-pub const ARP_HDR_LENGTH: usize = 28_usize;
+pub const ARP_HEADER_LENGTH: usize = 28_usize;
 
 // Register outselves with Ethernet layer
 pub(crate) fn register_defaults() -> Result<(), Error> {
@@ -45,9 +45,9 @@ impl Layer for ARP {
         &mut self,
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
-        if bytes.len() < ARP_HDR_LENGTH {
+        if bytes.len() < ARP_HEADER_LENGTH {
             return Err(Error::TooShort {
-                required: ARP_HDR_LENGTH,
+                required: ARP_HEADER_LENGTH,
                 available: bytes.len(),
                 data: hex::encode(bytes),
             });
@@ -63,7 +63,7 @@ impl Layer for ARP {
         self.target_ha = bytes[18..24].try_into()?;
         self.target_pa = bytes[24..28].try_into()?;
 
-        Ok((None, ARP_HDR_LENGTH))
+        Ok((None, ARP_HEADER_LENGTH))
     }
 
     fn name(&self) -> &'static str {

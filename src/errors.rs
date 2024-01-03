@@ -9,8 +9,10 @@ pub enum Error {
         available: usize,
         data: String,
     },
+
     /// A generic parsing error.
     ParseError(String),
+
     /// A layer registration error.
     RegisterError(String),
 }
