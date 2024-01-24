@@ -170,7 +170,7 @@ impl Packet {
             let _ = core::mem::replace(&mut p.unprocessed, bytes[start..].to_vec());
         }
 
-        #[cfg(features = "logging")]
+        #[cfg(feature = "logging")]
         log::debug!("Decoded packet: {:#?}", p);
 
         Ok(p)
