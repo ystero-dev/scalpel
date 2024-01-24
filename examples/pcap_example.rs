@@ -32,7 +32,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ => todo!(),
     };
 
+    let mut counter = 0;
     while let Ok(packet) = cap.next_packet() {
+        if let Some(num_packets) = opts.num_packets {
+            if counter >= num_packets {
+                break;
+            }
+        }
+        counter += 1;
+
         eprintln!("packet.data: {}", hex::encode(packet.data));
         let p = scalpel::Packet::from_bytes(&packet.data, encap_type);
         match p {
