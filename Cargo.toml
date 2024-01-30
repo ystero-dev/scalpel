@@ -45,6 +45,10 @@ name = "dns"
 harness = false
 
 [[example]]
+name = "mpls_example"
+path = "examples/mpls_example.rs"
+
+[[example]]
 name = "packet_json"
 path = "examples/packet_as_json.rs"
 
