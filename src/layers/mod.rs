@@ -18,5 +18,6 @@ pub mod sctp;
 pub mod m3ua;
 
 pub mod vxlan;
+pub mod mpls;
 
 include!(concat!(env!("OUT_DIR"), "/register_defaults.rs"));
