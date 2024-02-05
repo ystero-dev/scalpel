@@ -6,7 +6,7 @@ use serde::Serialize;
 
 use crate::errors::Error;
 use crate::layers::ethernet;
-use crate::types::ETHERTYPE_MPLS_UNICAST;
+use crate::types::{ETHERTYPE_MPLS_MULTICAST, ETHERTYPE_MPLS_UNICAST};
 use crate::Layer;
 
 use super::ipv4::IPv4;
@@ -16,19 +16,21 @@ pub const MPLS_HDR_LEN: usize = 4_usize;
 
 // Register Ourselves to the Ethernet layer, as this is a 2.5 layer protocol
 pub(crate) fn register_defaults() -> Result<(), Error> {
-    ethernet::register_ethertype(ETHERTYPE_MPLS_UNICAST, MPLS::creator)
+    ethernet::register_ethertype(ETHERTYPE_MPLS_UNICAST, MPLS::creator)?;
+    ethernet::register_ethertype(ETHERTYPE_MPLS_MULTICAST, MPLS::creator)
 }
 
 #[derive(Debug, Default, Serialize)]
-pub struct MPLS{//Make built-in types
+pub struct MPLS {
+    //Make built-in types
     #[serde(serialize_with = "crate::types::hex::serialize_lower_hex_u32")]
-    label:u32,//This is only 20 bits
+    label: u32, //This is only 20 bits
     #[serde(serialize_with = "crate::types::hex::serialize_lower_hex_u8")]
-    exp:u8,//This is only 3 bits
+    exp: u8, //This is only 3 bits
     #[serde(serialize_with = "crate::types::hex::serialize_lower_hex_u8")]
-    bos:u8,//This is only 1 bit
+    bos: u8, //This is only 1 bit
     #[serde(serialize_with = "crate::types::hex::serialize_lower_hex_u8")]
-    ttl:u8,//This is 1 byte
+    ttl: u8, //This is 1 byte
 }
 
 impl MPLS {
@@ -49,13 +51,14 @@ impl Layer for MPLS {
                 data: hex::encode(bytes),
             });
         }
-        
+
         //FIXME:For now the first few bits are not useful in label,exp and bos
         self.label = u32::from_be_bytes(bytes[0..4].try_into().unwrap()) as u32 >> 12;
-        self.exp = u8::from_be(bytes[2] << 4) >> 5; 
+        self.exp = u8::from_be(bytes[2] << 4) >> 5;
         self.bos = u8::from_be(bytes[2] << 7) >> 7;
         self.ttl = bytes[3];
 
+        //FIXME:Support IPV6
         Ok((Some(IPv4::creator()), MPLS_HDR_LEN))
     }
 
