@@ -49,21 +49,17 @@ pub struct DNSName(Vec<u8>);
 
 impl fmt::Display for DNSName {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut out = String::new();
         let mut i = 0_usize;
-        let name = loop {
+        let mut name_parts: Vec<&str> = Vec::new();
+        while self.0[i] != 0 {
             let x = self.0[i] as usize;
-            if x == 0 {
-                break out.as_str();
-            } else {
-                let out_str = core::str::from_utf8(&self.0[i + 1..=i + x]);
-                if let Ok(out_str) = out_str {
-                    out += out_str;
-                    out += ".";
-                    i += x + 1;
-                }
+            let out_str = core::str::from_utf8(&self.0[i + 1..=i + x]);
+            if let Ok(out_str) = out_str {
+                name_parts.push(out_str);
+                i += x + 1;
             }
         };
+        let name = name_parts.join(".");
         write!(f, "{}", name)
     }
 }
