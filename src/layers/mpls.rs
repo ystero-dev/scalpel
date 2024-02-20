@@ -27,8 +27,8 @@ pub struct MPLS {
     label: u32, //This is only 20 bits
     #[serde(serialize_with = "crate::types::hex::serialize_lower_hex_u8")]
     exp: u8, //This is only 3 bits
-    #[serde(serialize_with = "crate::types::hex::serialize_lower_hex_u8")]
-    bos: u8, //This is only 1 bit
+    // #[serde(serialize_with = "crate::types::hex::serialize_lower_hex_u8")]
+    bos: bool, //This is only 1 bit
     #[serde(serialize_with = "crate::types::hex::serialize_lower_hex_u8")]
     ttl: u8, //This is 1 byte
 }
@@ -55,7 +55,7 @@ impl Layer for MPLS {
         //FIXME:For now the first few bits are not useful in label,exp and bos
         self.label = u32::from_be_bytes(bytes[0..4].try_into().unwrap()) as u32 >> 12;
         self.exp = u8::from_be(bytes[2] << 4) >> 5;
-        self.bos = u8::from_be(bytes[2] << 7) >> 7;
+        self.bos = bytes[2] & 0x01 == 0x01;
         self.ttl = bytes[3];
 
         //FIXME:Support IPV6
