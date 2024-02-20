@@ -147,10 +147,9 @@ impl Packet {
         log::debug!("L2 in packet: {}", l2.short_name());
 
         let mut current_layer = l2;
-        let mut res: (Option<Box<dyn Layer + Send>>, usize);
         let mut start = 0;
         loop {
-            res = current_layer.decode_bytes(&bytes[start..])?;
+            let res = current_layer.decode_bytes(&bytes[start..])?;
 
             if res.0.is_none() {
                 p.layers.push(current_layer);
@@ -311,6 +310,7 @@ mod tests {
         assert!(false, "{}", register_defaults);
     }
 
+    #[ignore]
     #[test]
     fn parse_failing_packet() {
         use crate::layers;

@@ -58,7 +58,7 @@ impl fmt::Display for DNSName {
                 name_parts.push(out_str);
                 i += x + 1;
             }
-        };
+        }
         let name = name_parts.join(".");
         write!(f, "{}", name)
     }
@@ -95,6 +95,7 @@ pub struct DNSResRecord {
     class: u16,
     ttl: u32,
     rdlength: u16,
+    #[serde(flatten)]
     rdata: DNSRecordData,
 }
 
@@ -245,54 +246,58 @@ impl DNS {
         }
         let rdata_buffer = &bytes[offset..offset + rdlength as usize];
 
-        i += 10 + rdlength as usize;
-        remaining -= 10 + rdlength as usize;
+        i += 10;
+        remaining -= 10;
 
         let rdata = match type_ {
             1 => DNSRecordData::A(rdata_buffer.try_into().unwrap()), /* A */
             28 => DNSRecordData::AAAA(rdata_buffer.try_into().unwrap()), /* AAAA */
             2 | 3 | 4 | 5 | 7 | 8 | 9 => {
-                let (name, _) = Self::dns_name_from_bytes(bytes, i, remaining)?;
+                let (name, _) = Self::dns_name_from_bytes(bytes, offset, remaining)?;
                 DNSRecordData::CNAME(name)
             }
-            6 => {
+            6 => /* SOA */ {
                 // FIXME: into an inline function?
-                let (mname, consumed) = Self::dns_name_from_bytes(bytes, i, remaining)?;
-                i += consumed;
+                let mut offset = offset;
+                let mut remaining = remaining;
+                let (mname, consumed) = Self::dns_name_from_bytes(bytes, offset, remaining)?;
+                offset += consumed;
                 remaining -= consumed;
-                let (rname, consumed) = Self::dns_name_from_bytes(bytes, i, remaining)?;
-                i += consumed;
+                let (rname, consumed) = Self::dns_name_from_bytes(bytes, offset, remaining)?;
+                offset += consumed;
                 remaining -= consumed;
                 if remaining < 20 {
                     return Err(Error::TooShort {
                         required: 20,
                         available: remaining,
-                        data: hex::encode(&bytes[i..]),
+                        data: hex::encode(&bytes[offset..]),
                     });
                 }
                 // serial, refresh, retry, expire, minimum
-                let serial = (bytes[i] as u32) << 24
-                    | (bytes[i + 1] as u32) << 16
-                    | (bytes[i + 2] as u32) << 8
-                    | (bytes[i + 3] as u32);
-                let refresh = (bytes[i + 4] as u32) << 24
-                    | (bytes[i + 5] as u32) << 16
-                    | (bytes[i + 6] as u32) << 8
-                    | (bytes[i + 7] as u32);
-                let retry = (bytes[i + 8] as u32) << 24
-                    | (bytes[i + 9] as u32) << 16
-                    | (bytes[i + 10] as u32) << 8
-                    | (bytes[i + 11] as u32);
-                let expire = (bytes[i + 12] as u32) << 24
-                    | (bytes[i + 13] as u32) << 16
-                    | (bytes[i + 14] as u32) << 8
-                    | (bytes[i + 15] as u32);
-                let minimum = (bytes[i + 16] as u32) << 24
-                    | (bytes[i + 17] as u32) << 16
-                    | (bytes[i + 18] as u32) << 8
-                    | (bytes[i + 19] as u32);
+                let serial = (bytes[offset] as u32) << 24
+                    | (bytes[offset + 1] as u32) << 16
+                    | (bytes[offset + 2] as u32) << 8
+                    | (bytes[offset + 3] as u32);
+                let refresh = (bytes[offset + 4] as u32) << 24
+                    | (bytes[offset + 5] as u32) << 16
+                    | (bytes[offset + 6] as u32) << 8
+                    | (bytes[offset + 7] as u32);
+                let retry = (bytes[offset + 8] as u32) << 24
+                    | (bytes[offset + 9] as u32) << 16
+                    | (bytes[offset + 10] as u32) << 8
+                    | (bytes[offset + 11] as u32);
+                let expire = (bytes[offset + 12] as u32) << 24
+                    | (bytes[offset + 13] as u32) << 16
+                    | (bytes[offset + 14] as u32) << 8
+                    | (bytes[offset + 15] as u32);
+                let minimum = (bytes[offset + 16] as u32) << 24
+                    | (bytes[offset + 17] as u32) << 16
+                    | (bytes[offset + 18] as u32) << 8
+                    | (bytes[offset + 19] as u32);
 
-                i += 20;
+                // offset += 20;
+                // remaining -= 20;
+
                 DNSRecordData::SOA(DNSSOA {
                     mname,
                     rname,
@@ -303,8 +308,11 @@ impl DNS {
                     minimum,
                 })
             }
+            // 41 => unimplemented!("Parse OPT"),
             _ => DNSRecordData::NULL(rdata_buffer.into()),
         };
+        i += rdlength as usize;
+        // remaining -= rdlength as usize;
 
         Ok((
             DNSResRecord {
