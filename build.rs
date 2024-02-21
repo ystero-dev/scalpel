@@ -40,7 +40,7 @@ fn main() -> std::io::Result<()> {
                             .to_str()
                             .unwrap()
                             .to_string()
-                            .replace('/', "::")
+                            .replace(std::path::MAIN_SEPARATOR, "::")
                             .replace("mod.rs", "")
                             .replace(".rs", "::");
 
