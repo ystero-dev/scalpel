@@ -12,7 +12,7 @@ use crate::Layer;
 use super::ipv4::IPv4;
 
 /// Default Header Length for MPLS Packets
-pub const MPLS_HDR_LEN: usize = 4_usize;
+pub const MPLS_HEADER_LENGTH: usize = 4_usize;
 
 // Register Ourselves to the Ethernet layer, as this is a 2.5 layer protocol
 pub(crate) fn register_defaults() -> Result<(), Error> {
@@ -49,24 +49,18 @@ impl Layer for MPLS {
         &mut self,
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
-        if bytes.len() < MPLS_HDR_LEN {
+        if bytes.len() < MPLS_HEADER_LENGTH {
             return Err(Error::TooShort {
-                required: MPLS_HDR_LEN,
+                required: MPLS_HEADER_LENGTH,
                 available: bytes.len(),
                 data: hex::encode(bytes),
             });
         }
 
-        let mut label_index = 0;
+        let mut byte_offset = 0;
 
         loop {
-            let mut current_label = MPLSLabel {
-                label: 0,
-                exp: 0,
-                bos: false,
-                ttl: 0,
-            };
-            let byte_offset = 4 * label_index;
+            let mut current_label = MPLSLabel::default();
 
             //FIXME:For now the first few bits are not useful in label,exp and bos
             current_label.label = u32::from_be_bytes(
@@ -80,7 +74,7 @@ impl Layer for MPLS {
             current_label.ttl = bytes[byte_offset + 3];
 
             self.labels.push(current_label);
-            label_index += 1;
+            byte_offset += MPLS_HEADER_LENGTH;
 
             if current_label.bos == true {
                 break;
@@ -88,7 +82,7 @@ impl Layer for MPLS {
         }
 
         //FIXME:Support IPV6
-        Ok((Some(IPv4::creator()), 4 * (label_index)))
+        Ok((Some(IPv4::creator()), byte_offset))
     }
 
     fn name(&self) -> &'static str {
