@@ -20,8 +20,8 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
     ethernet::register_ethertype(ETHERTYPE_MPLS_MULTICAST, MPLS::creator)
 }
 
-#[derive(Debug, Default, Serialize)]
-pub struct MPLS {
+#[derive(Debug, Default, Serialize, Copy, Clone)]
+pub struct MPLSLabel {
     //Make built-in types
     #[serde(serialize_with = "crate::types::hex::serialize_lower_hex_u32")]
     label: u32, //This is only 20 bits
@@ -31,6 +31,11 @@ pub struct MPLS {
     bos: bool, //This is only 1 bit
     #[serde(serialize_with = "crate::types::hex::serialize_lower_hex_u8")]
     ttl: u8, //This is 1 byte
+}
+
+#[derive(Debug, Default, Serialize, Clone)]
+pub struct MPLS {
+    labels: Vec<MPLSLabel>,
 }
 
 impl MPLS {
@@ -52,14 +57,38 @@ impl Layer for MPLS {
             });
         }
 
-        //FIXME:For now the first few bits are not useful in label,exp and bos
-        self.label = u32::from_be_bytes(bytes[0..4].try_into().unwrap()) as u32 >> 12;
-        self.exp = u8::from_be(bytes[2] << 4) >> 5;
-        self.bos = bytes[2] & 0x01 == 0x01;
-        self.ttl = bytes[3];
+        let mut label_index = 0;
+
+        loop {
+            let mut current_label = MPLSLabel {
+                label: 0,
+                exp: 0,
+                bos: false,
+                ttl: 0,
+            };
+            let byte_offset = 4 * label_index;
+
+            //FIXME:For now the first few bits are not useful in label,exp and bos
+            current_label.label = u32::from_be_bytes(
+                bytes[(byte_offset + 0)..(byte_offset + 4)]
+                    .try_into()
+                    .unwrap(),
+            ) as u32
+                >> 12;
+            current_label.exp = u8::from_be(bytes[byte_offset + 2] << 4) >> 5;
+            current_label.bos = bytes[byte_offset + 2] & 0x01 == 0x01;
+            current_label.ttl = bytes[byte_offset + 3];
+
+            self.labels.push(current_label);
+            label_index += 1;
+
+            if current_label.bos == true {
+                break;
+            }
+        }
 
         //FIXME:Support IPV6
-        Ok((Some(IPv4::creator()), MPLS_HDR_LEN))
+        Ok((Some(IPv4::creator()), 4 * (label_index)))
     }
 
     fn name(&self) -> &'static str {
