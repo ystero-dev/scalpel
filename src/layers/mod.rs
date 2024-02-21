@@ -17,10 +17,7 @@ pub mod sctp;
 
 pub mod m3ua;
 
-<<<<<<< HEAD
 pub mod vxlan;
-=======
 pub mod mpls;
->>>>>>> c9d5509 (Implemented the MPLS protocol)
 
 include!(concat!(env!("OUT_DIR"), "/register_defaults.rs"));
