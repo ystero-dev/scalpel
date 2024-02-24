@@ -27,21 +27,16 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
     ipv4::register_protocol(IPPROTO_ICMP, ICMP::creator)
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Default, Debug, Serialize)]
 #[serde(untagged)]
 pub enum IcmpType {
-    #[serde[rename = "unsupported"]]
+    #[default]
+    Empty,
     Unsupported(IcmpUnsupported),
-    Unused(IcmpUnused),
+    #[serde[rename = "unsupported"]]
     EchoRequest(IcmpEcho),
     EchoReply(IcmpEcho),
     Redirect(IcmpRedirect),
-}
-
-impl Default for IcmpType {
-    fn default() -> Self {
-        IcmpType::Unsupported(IcmpUnsupported{unsupported: 0})
-    }
 }
 
 #[derive(Default, Debug, Serialize)]
@@ -56,16 +51,13 @@ pub struct IcmpRedirect {
 }
 
 #[derive(Default, Debug, Serialize)]
-pub struct IcmpUnused {
-    unused: u32,
-}
-
-#[derive(Default, Debug, Serialize)]
 pub struct IcmpUnsupported {
-    unsupported: u32,
+    #[serde(
+        skip_serializing_if = "Vec::is_empty",
+        serialize_with = "hex::serde::serialize"
+    )]
+    unsupported: Vec<u8>,
 }
-
-
 
 /// Structure representing the ICMP Header
 #[derive(Default, Debug, Serialize)]
@@ -73,7 +65,8 @@ pub struct ICMP {
     #[serde(rename = "type")]
     icmp_type: u8,
     code: u8,
-    checksum: String,
+    #[serde(serialize_with = "crate::types::hex::serialize_lower_hex_u16")]
+    checksum: u16,
     #[serde(flatten)]
     rest_of_header: IcmpType,
 }
@@ -102,13 +95,14 @@ impl Layer for ICMP {
         // decode type, code and checksum
         self.icmp_type = u8::from_be(bytes[0]);
         self.code = u8::from_be(bytes[1]);
-        self.checksum = hex::encode(&bytes[2..4]);
+        self.checksum = (bytes[2] as u16) << 8 | (bytes[3] as u16);
 
         // process the next 4 bytes depending on the type of ICMP packet
         self.rest_of_header = match self.icmp_type {
             ICMP_ECHO_REPLY => {
                 let identifier = (bytes[4] as u16) << 8 | (bytes[5] as u16);
                 let sequence_number = (bytes[6] as u16) << 8 | (bytes[7] as u16);
+                decoded = 8;
                 IcmpType::EchoReply(IcmpEcho {
                     identifier,
                     sequence_number,
@@ -117,30 +111,29 @@ impl Layer for ICMP {
             ICMP_ECHO_REQUEST => {
                 let identifier = (bytes[4] as u16) << 8 | (bytes[5] as u16);
                 let sequence_number = (bytes[6] as u16) << 8 | (bytes[7] as u16);
+                decoded = 8;
                 IcmpType::EchoRequest(IcmpEcho {
                     identifier,
                     sequence_number,
                 })
             }
-            ICMP_REDIRECT => IcmpType::Redirect(IcmpRedirect {
-                gateway_address: bytes[4..8].try_into().unwrap(),
-            }),
-            ICMP_DESTINATION_UNREACHABLE | ICMP_SOURCE_QUENCH | ICMP_TIME_EXCEEDED => {
-                IcmpType::Unused(IcmpUnused {
-                    unused: (bytes[4] as u32) << 24
-                        | (bytes[5] as u32) << 16
-                        | (bytes[6] as u32) << 8
-                        | (bytes[7] as u32),
+            ICMP_REDIRECT => {
+                decoded = 8;
+                IcmpType::Redirect(IcmpRedirect {
+                    gateway_address: bytes[4..8].try_into().unwrap(),
                 })
             }
-            _ => IcmpType::Unsupported(IcmpUnsupported{
-                unsupported: (bytes[4] as u32) << 24
-                | (bytes[5] as u32) << 16
-                | (bytes[6] as u32) << 8
-                | (bytes[7] as u32)
+            ICMP_DESTINATION_UNREACHABLE | ICMP_SOURCE_QUENCH | ICMP_TIME_EXCEEDED => {
+                decoded = 8;
+                IcmpType::Empty
+            }
+            _ => {
+                decoded = bytes.len();
+                IcmpType::Unsupported(IcmpUnsupported {
+                unsupported: bytes[4..].to_vec(),
             })
+        },
         };
-        decoded = 8;
         Ok((None, decoded))
     }
 
