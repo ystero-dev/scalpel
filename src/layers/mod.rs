@@ -10,6 +10,7 @@ pub mod tcp;
 pub mod udp;
 
 pub mod dns;
+pub mod icmpv6;
 
 pub mod arp;
 
