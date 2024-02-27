@@ -25,7 +25,10 @@ pub const ICMPV6_PACKET_TOO_BIG: u8 = 2;
 pub const ICMPV6_TIME_EXCEEDED: u8 = 3;
 pub const ICMPV6_ECHO_REQUEST: u8 = 128;
 pub const ICMPV6_ECHO_REPLY: u8 = 129;
+pub const ICMPV6_ROUTER_ADVERTISEMENT: u8 = 134;
 pub const ICMPV6_NEIGHBOR_SOLICITATION: u8 = 135;
+pub const ICMPV6_NEIGHBOR_ADVERTISEMENT: u8 = 136;
+pub const ICMPV6_REDIRECT: u8 = 137;
 
 #[derive(Default, Debug, Serialize)]
 #[serde(untagged)]
@@ -37,7 +40,18 @@ pub enum Icmpv6Type {
     EchoRequest(Icmpv6Echo),
     EchoReply(Icmpv6Echo),
     PacketSizeTooBig(Icmpv6PacketSizeTooBig),
+    RouterAdvertisement(Icmpv6RouterAdvertisement),
     NeighborSolicitation(Icmpv6NeighborSolicitation),
+    NeighborAdvertisement(Icmpv6NeighborAdvertisement),
+    Redirect(Icmpv6Redirect),
+
+}
+
+#[derive(Debug, Default, Serialize, Copy, Clone)]
+pub struct RouterAdvFlags {
+    managed_address_flag: bool, 
+    other_config: bool, //This is only 1 bit
+    
 }
 
 #[derive(Default, Debug, Serialize)]
@@ -61,8 +75,29 @@ pub struct Icmpv6Unsupported {
 }
 
 #[derive(Default, Debug, Serialize)]
+pub struct Icmpv6RouterAdvertisement {
+    cur_hop_limit: u8,
+    flags: RouterAdvFlags,
+    router_lifetime: u16,
+    reachable_time: u32,
+    retrans_timer: u32,
+}
+
+#[derive(Default, Debug, Serialize)]
 pub struct Icmpv6NeighborSolicitation {
     target_address: IPv6Address,
+}
+
+#[derive(Default, Debug, Serialize)]
+pub struct Icmpv6NeighborAdvertisement{
+    flags : u32,
+    target_address : IPv6Address,
+}
+
+#[derive(Default, Debug, Serialize)]
+pub struct Icmpv6Redirect {
+    target_address : IPv6Address,
+    destination_address : IPv6Address,
 }
 
 /// Structure representing the ICMPv6 Header
@@ -134,10 +169,50 @@ impl Layer for ICMPv6 {
                 Icmpv6Type::Empty
             }
 
+            ICMPV6_ROUTER_ADVERTISEMENT => {
+                let mut flags = RouterAdvFlags::default();
+                let cur_hop_limit = u8::from_be(bytes[4]);
+                flags.managed_address_flag = (bytes[5] & 0x01) == 0x01;
+                flags.other_config = (bytes[5]  & 0x02) == 0x02;
+
+
+                let router_lifetime: u16 = (bytes[6] as u16) << 8 | (bytes[7] as u16);
+                let reachable_time: u32 = u32::from_be_bytes(bytes[8..12].try_into().unwrap());
+                let retrans_timer: u32 = u32::from_be_bytes(bytes[12..16].try_into().unwrap());
+                decoded = 16;
+                Icmpv6Type::RouterAdvertisement(Icmpv6RouterAdvertisement{
+                    cur_hop_limit,
+                    flags,
+                    router_lifetime,
+                    reachable_time,
+                    retrans_timer,
+                })
+
+            }
+
             ICMPV6_NEIGHBOR_SOLICITATION => {
                 let target_address = bytes[8..24].try_into().unwrap();
                 decoded = 24;
                 Icmpv6Type::NeighborSolicitation(Icmpv6NeighborSolicitation { target_address })
+            }
+
+            ICMPV6_NEIGHBOR_ADVERTISEMENT => {
+                let flags: u32 = u32::from_be_bytes(bytes[4..8].try_into().unwrap());
+                let target_address = bytes[8..24].try_into().unwrap();
+                decoded = 24;
+                Icmpv6Type::NeighborAdvertisement(Icmpv6NeighborAdvertisement { 
+                    flags,
+                    target_address,
+                })
+            }
+            ICMPV6_REDIRECT => {
+                let target_address = bytes[8..24].try_into().unwrap();
+                let destination_address = bytes[24..40].try_into().unwrap();
+                decoded = 40;
+                Icmpv6Type::Redirect(Icmpv6Redirect {
+                    target_address,
+                    destination_address,
+                })
             }
 
             _ => {
