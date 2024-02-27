@@ -52,8 +52,8 @@ pub fn register_ethertype(eth_type: EtherType, layer: LayerCreatorFn) -> Result<
 /// Structure representing the Ethernet Header of a Packet.
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct Ethernet {
-    src_mac: MACAddress,
     dst_mac: MACAddress,
+    src_mac: MACAddress,
     #[serde(serialize_with = "crate::types::hex::serialize_upper_hex_u16")]
     ethertype: EtherType,
 }
@@ -76,8 +76,8 @@ impl Layer for Ethernet {
                 data: hex::encode(bytes),
             });
         }
-        self.src_mac = bytes[0..6].try_into()?;
-        self.dst_mac = bytes[6..12].try_into()?;
+        self.dst_mac = bytes[0..6].try_into()?;
+        self.src_mac = bytes[6..12].try_into()?;
         self.ethertype = (bytes[12] as u16) << 8 | bytes[13] as u16;
 
         let map = ETHERTYPES_MAP.read().unwrap();
