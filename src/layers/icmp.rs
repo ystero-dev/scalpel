@@ -21,6 +21,8 @@ pub const ICMP_DESTINATION_UNREACHABLE: u8 = 3_u8;
 pub const ICMP_SOURCE_QUENCH: u8 = 4_u8;
 pub const ICMP_REDIRECT: u8 = 5_u8;
 pub const ICMP_TIME_EXCEEDED: u8 = 11_u8;
+pub const ICMP_TIMESTAMP_REQUEST: u8 = 13_u8;
+pub const ICMP_TIMESTAMP_REPLY: u8 = 14_u8;
 
 
 // Register ICMP with Protocol Handler in IPv4
@@ -38,6 +40,8 @@ pub enum IcmpType {
     EchoRequest(IcmpEcho),
     EchoReply(IcmpEcho),
     Redirect(IcmpRedirect),
+    TimestampRequest(IcmpEcho),
+    TimestampReply(IcmpEcho),
 }
 
 #[derive(Default, Debug, Serialize)]
@@ -66,6 +70,7 @@ pub enum IcmpData {
     #[default]
     None,
     Unknown(IcmpUnknownData),
+    Timestamp(IcmpTimestampData),
 }
 
 #[derive(Default, Debug, Serialize)]
@@ -75,6 +80,13 @@ pub struct IcmpUnknownData {
         serialize_with = "hex::serde::serialize"
     )]
     data: Vec<u8>,
+}
+
+#[derive(Default, Debug, Serialize)]
+pub struct IcmpTimestampData {
+    originate_timestamp: u32,
+    recieve_timestamp: u32,
+    transmit_timestamp: u32,
 }
 
 /// Structure representing the ICMP Header
@@ -137,6 +149,24 @@ impl Layer for ICMP {
                     sequence_number,
                 })
             }
+            ICMP_TIMESTAMP_REQUEST => {
+                let identifier = (bytes[4] as u16) << 8 | (bytes[5] as u16);
+                let sequence_number = (bytes[6] as u16) << 8 | (bytes[7] as u16);
+                decoded = 8;
+                IcmpType::TimestampRequest(IcmpEcho {
+                    identifier,
+                    sequence_number,
+                })
+            }
+            ICMP_TIMESTAMP_REPLY => {
+                let identifier = (bytes[4] as u16) << 8 | (bytes[5] as u16);
+                let sequence_number = (bytes[6] as u16) << 8 | (bytes[7] as u16);
+                decoded = 8;
+                IcmpType::TimestampReply(IcmpEcho {
+                    identifier,
+                    sequence_number,
+                })
+            }
             ICMP_REDIRECT => {
                 decoded = 8;
                 IcmpType::Redirect(IcmpRedirect {
@@ -160,6 +190,17 @@ impl Layer for ICMP {
             ICMP_ECHO_REPLY | ICMP_ECHO_REQUEST => {
                 decoded = bytes.len();
                 IcmpData::Unknown(IcmpUnknownData { data: bytes[8..].to_vec() })
+            }
+            ICMP_TIMESTAMP_REPLY | ICMP_TIMESTAMP_REQUEST => {
+                decoded += 12;
+                let originate_timestamp = u32::from_be_bytes(bytes[8..12].try_into().unwrap());
+                let recieve_timestamp = u32::from_be_bytes(bytes[12..16].try_into().unwrap());
+                let transmit_timestamp = u32::from_be_bytes(bytes[16..20].try_into().unwrap());
+                IcmpData::Timestamp(IcmpTimestampData{
+                    originate_timestamp,
+                    recieve_timestamp,
+                    transmit_timestamp,
+                })
             }
             _ => IcmpData::None
         };
@@ -294,25 +335,50 @@ mod tests {
     }
 
     #[test]
-    fn parse_unsupported_icmp_type(){
+    fn parse_timestamp_icmp_type(){
         let _ = layers::register_defaults();
 
-        let icmp_destination_unreachable_packet = vec![
-            0x00, 0xa0, 0xd1, 0xbe, 0x97, 0xdd, 0x00, 0x11, 
-            0x2f, 0x36, 0x8c, 0xda, 0x08, 0x00, 0x45, 0x00, 
-            0x00, 0x28, 0x8d, 0xff, 0x00, 0x00, 0x80, 0x01, 
-            0x2a, 0xb8, 0xc0, 0xa8, 0x00, 0x66, 0xc0, 0xa8, 
-            0x00, 0x67, 0x0d, 0x00, 0x94, 0xe3, 0x39, 0x30, 
-            0x00, 0x00, 0x00, 0xf6, 0x23, 0xf6, 0x00, 0x00, 
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        let icmp_timestamp_packet = vec![
+            0x00, 0x11, 0x2f, 0x36, 0x8c, 0xda, 0x00, 0xa0, 0xd1, 0xbe, 0x97, 0xdd, 0x08, 0x00, 0x45,
+            0x00, 0x00, 0x28, 0x0f, 0x3c, 0x00, 0x00, 0x80, 0x01, 0xa9, 0x7b, 0xc0, 0xa8, 0x00, 0x67,
+            0xc0, 0xa8, 0x00, 0x66, 0x0e, 0x00, 0xd3, 0x11, 0x39, 0x30, 0x00, 0x00, 0x00, 0xf6, 0x36,
+            0x59, 0x61, 0x36, 0xf6, 0x00, 0x61, 0x36, 0xf6, 0x00,
         ];
 
-        let p = Packet::from_bytes(&icmp_destination_unreachable_packet, ENCAP_TYPE_ETH);
+        let p = Packet::from_bytes(&icmp_timestamp_packet, ENCAP_TYPE_ETH);
         assert!(p.is_ok());
         let p = p.unwrap();
 
         let icmp_packet = serde_json::to_value(&p.layers[2]).unwrap();
-        assert_eq!(icmp_packet.get("type"), Some(&json!(13)));
+        assert_eq!(icmp_packet.get("type"), Some(&json!(14)));
+        assert_eq!(icmp_packet.get("code"), Some(&json!(0)));
+        assert_eq!(icmp_packet.get("checksum"), Some(&json!("0xd311")));
+        assert_eq!(icmp_packet.get("identifier"), Some(&json!(14640)));
+        assert_eq!(icmp_packet.get("sequence_number"), Some(&json!(0)));
+        assert_eq!(icmp_packet.get("originate_timestamp"), Some(&json!(16135769)));
+        assert_eq!(icmp_packet.get("recieve_timestamp"), Some(&json!(1630991872)));
+        assert_eq!(icmp_packet.get("transmit_timestamp"), Some(&json!(1630991872)));
+    }
+
+    #[test]
+    fn parse_unsupported_icmp_type(){
+        let _ = layers::register_defaults();
+
+        let icmp_unsupported_packet = vec![
+            0x00, 0xa0, 0xd1, 0xbe, 0x97, 0xdd, 0x00, 0x11, 
+            0x2f, 0x36, 0x8c, 0xda, 0x08, 0x00, 0x45, 0x00, 
+            0x00, 0x28, 0x8d, 0xff, 0x00, 0x00, 0x80, 0x01, 
+            0x2a, 0xb8, 0xc0, 0xa8, 0x00, 0x66, 0xc0, 0xa8, 
+            0x00, 0x67, 0x0c, 0x00, 0x94, 0xe3, 0x39, 0x30, 
+            0x00, 0x00, 0x00, 0xf6, 0x23, 0xf6, 0x00, 0x00, 
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        ];
+
+        let p = Packet::from_bytes(&icmp_unsupported_packet, ENCAP_TYPE_ETH);
+        assert!(p.is_ok());
+        let p = p.unwrap();
+        let icmp_packet = serde_json::to_value(&p.layers[2]).unwrap();
+        assert_eq!(icmp_packet.get("type"), Some(&json!(12)));
         assert_eq!(icmp_packet.get("code"), Some(&json!(0)));
         assert_eq!(icmp_packet.get("checksum"), Some(&json!("0x94e3")));
         assert_eq!(icmp_packet.get("unsupported"), Some(&json!("3930000000f623f60000000000000000")));
