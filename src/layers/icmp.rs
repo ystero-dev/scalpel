@@ -22,6 +22,7 @@ pub const ICMP_SOURCE_QUENCH: u8 = 4_u8;
 pub const ICMP_REDIRECT: u8 = 5_u8;
 pub const ICMP_TIME_EXCEEDED: u8 = 11_u8;
 
+
 // Register ICMP with Protocol Handler in IPv4
 pub(crate) fn register_defaults() -> Result<(), Error> {
     ipv4::register_protocol(IPPROTO_ICMP, ICMP::creator)
@@ -59,6 +60,23 @@ pub struct IcmpUnsupported {
     unsupported: Vec<u8>,
 }
 
+#[derive(Default, Debug, Serialize)]
+#[serde(untagged)]
+pub enum IcmpData {
+    #[default]
+    None,
+    Unknown(IcmpUnknownData),
+}
+
+#[derive(Default, Debug, Serialize)]
+pub struct IcmpUnknownData {
+    #[serde(
+        skip_serializing_if = "Vec::is_empty",
+        serialize_with = "hex::serde::serialize"
+    )]
+    data: Vec<u8>,
+}
+
 /// Structure representing the ICMP Header
 #[derive(Default, Debug, Serialize)]
 pub struct ICMP {
@@ -69,6 +87,8 @@ pub struct ICMP {
     checksum: u16,
     #[serde(flatten)]
     rest_of_header: IcmpType,
+    #[serde(flatten)]
+    data: IcmpData,
 }
 
 impl ICMP {
@@ -82,7 +102,7 @@ impl Layer for ICMP {
         &mut self,
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error> {
-        let decoded;
+        let mut decoded;
 
         if bytes.len() < ICMP_HEADER_LENGTH {
             return Err(Error::TooShort {
@@ -134,6 +154,16 @@ impl Layer for ICMP {
                 })
             }
         };
+
+
+        self.data = match self.icmp_type {
+            ICMP_ECHO_REPLY | ICMP_ECHO_REQUEST => {
+                decoded = bytes.len();
+                IcmpData::Unknown(IcmpUnknownData { data: bytes[8..].to_vec() })
+            }
+            _ => IcmpData::None
+        };
+
         Ok((None, decoded))
     }
 
