@@ -9,6 +9,8 @@ use crate::layers::ipv4;
 use crate::types::IPv4Address;
 use crate::Layer;
 
+use super::ipv4::IPv4;
+
 /// IANA Assigned protocol number for ICMP
 pub const IPPROTO_ICMP: u8 = 1_u8;
 /// ICMP header length
@@ -71,6 +73,7 @@ pub enum IcmpData {
     None,
     Unknown(IcmpUnknownData),
     Timestamp(IcmpTimestampData),
+    Error(IcmpOriginalDatagramPortion),
 }
 
 #[derive(Default, Debug, Serialize)]
@@ -87,6 +90,16 @@ pub struct IcmpTimestampData {
     originate_timestamp: u32,
     recieve_timestamp: u32,
     transmit_timestamp: u32,
+}
+
+#[derive(Default, Debug, Serialize)]
+pub struct IcmpOriginalDatagramPortion {
+    ip_header: IPv4,
+    #[serde(
+        skip_serializing_if = "Vec::is_empty",
+        serialize_with = "hex::serde::serialize"
+    )]
+    data:  Vec<u8>,
 }
 
 /// Structure representing the ICMP Header
@@ -190,6 +203,15 @@ impl Layer for ICMP {
             ICMP_ECHO_REPLY | ICMP_ECHO_REQUEST => {
                 decoded = bytes.len();
                 IcmpData::Unknown(IcmpUnknownData { data: bytes[8..].to_vec() })
+            }
+            ICMP_DESTINATION_UNREACHABLE | ICMP_TIME_EXCEEDED | ICMP_SOURCE_QUENCH => {
+                let mut ip_header: IPv4 = IPv4::default();
+                let (_, processed) = ip_header.decode_bytes(&bytes[8..])?;
+                decoded += processed;
+                IcmpData::Error(IcmpOriginalDatagramPortion{
+                    ip_header,
+                    data: bytes[decoded..].try_into().unwrap()
+                })
             }
             ICMP_TIMESTAMP_REPLY | ICMP_TIMESTAMP_REQUEST => {
                 decoded += 12;
