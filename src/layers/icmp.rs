@@ -207,10 +207,11 @@ impl Layer for ICMP {
             ICMP_DESTINATION_UNREACHABLE | ICMP_TIME_EXCEEDED | ICMP_SOURCE_QUENCH => {
                 let mut ip_header: IPv4 = IPv4::default();
                 let (_, processed) = ip_header.decode_bytes(&bytes[8..])?;
-                decoded += processed;
+                let data_offset = decoded + processed;
+                decoded = bytes.len();
                 IcmpData::Error(IcmpOriginalDatagramPortion{
                     ip_header,
-                    data: bytes[decoded..].try_into().unwrap()
+                    data: bytes[data_offset..].try_into().unwrap()
                 })
             }
             ICMP_TIMESTAMP_REPLY | ICMP_TIMESTAMP_REQUEST => {
