@@ -2,7 +2,7 @@
 //!
 //! This module defines types for IPv4 and IPv6 which are simply based on the u8 arrays.
 
-use core::convert::TryFrom;
+use core::convert::{From, TryFrom};
 use core::fmt;
 use core::fmt::Write;
 
@@ -10,8 +10,14 @@ use serde::{Serialize, Serializer};
 
 use crate::errors::Error as CrateError;
 
-#[derive(Default, Clone, PartialEq)]
+#[derive(Default, Clone, PartialEq, Eq)]
 pub struct IPv4Address([u8; 4]);
+
+impl From<[u8; 4]> for IPv4Address {
+    fn from(value: [u8; 4]) -> Self {
+        Self(value)
+    }
+}
 
 impl TryFrom<&'_ [u8]> for IPv4Address {
     type Error = CrateError;
@@ -62,8 +68,14 @@ impl Serialize for IPv4Address {
     }
 }
 
-#[derive(Default, Clone, PartialEq)]
+#[derive(Default, Clone, PartialEq, Eq)]
 pub struct IPv6Address([u16; 8]);
+
+impl From<[u16; 8]> for IPv6Address {
+    fn from(value: [u16; 8]) -> Self {
+        Self(value)
+    }
+}
 
 impl TryFrom<&'_ [u8]> for IPv6Address {
     type Error = CrateError;
