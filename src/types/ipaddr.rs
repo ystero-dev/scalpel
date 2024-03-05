@@ -10,7 +10,7 @@ use serde::{Serialize, Serializer};
 
 use crate::errors::Error as CrateError;
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, PartialEq)]
 pub struct IPv4Address([u8; 4]);
 
 impl TryFrom<&'_ [u8]> for IPv4Address {
@@ -62,7 +62,7 @@ impl Serialize for IPv4Address {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, PartialEq)]
 pub struct IPv6Address([u16; 8]);
 
 impl TryFrom<&'_ [u8]> for IPv6Address {
