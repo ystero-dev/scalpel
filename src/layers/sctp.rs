@@ -2,9 +2,8 @@
 use core::convert::TryInto;
 
 use std::collections::HashMap;
-use std::sync::RwLock;
+use std::sync::{RwLock,OnceLock};
 
-use lazy_static::lazy_static;
 use serde::{ser::SerializeStruct as _, Serialize, Serializer};
 
 use crate::errors::Error;
@@ -12,38 +11,42 @@ use crate::layers::{ipv4, ipv6};
 use crate::types::LayerCreatorFn;
 use crate::Layer;
 
-lazy_static! {
-    // A Map of Chunk Type to Display String
-    static ref CHUNK_DISPLAY_MAP: HashMap<u8, &'static str> = {
-        let mut m = HashMap::new();
-        m.insert(0, "DATA Chunk");
-        m.insert(1, "INIT Chunk");
-        m.insert(2, "INIT-ACK Chunk");
-        m.insert(3, "SACK Chunk");
-        m.insert(4, "HEARTBEAT Chunk");
-        m.insert(5, "HEARTBEAT-ACK Chunk");
-        m.insert(6, "ABORT Chunk");
-        m.insert(7, "SHUTDOWN Chunk");
-        m.insert(8, "SHUTDOWN-ACK Chunk");
-        m.insert(9, "ERROR Chunk");
-        m.insert(10, "COOKIE-ECHO Chunk");
-        m.insert(11, "COOKIE-ACK Chunk");
-        m.insert(12, "ECNE Chunk");
-        m.insert(13, "CWR Chunk");
-        m.insert(14, "SHUTDOWN_COMPLETE Chunk");
-        m.insert(15, "AUTH Chunk");
-        m.insert(64, "I-DATA Chunk");
-        m.insert(128, "ASCONF-ACK Chunk");
-        m.insert(130, "RE-CONFIG Chunk");
-        m.insert(132, "PAD Chunk");
-        m.insert(192, "FORWARD-TSN Chunk");
-        m.insert(193, "ASCONF Chunk");
-        m.insert(195, "I-FORWARD-TSN Chunk");
-        m
-    };
-    static ref UNKNOWN_CHUNK_TYPE: &'static str = "Unknown Chunk";
+const UNKNOWN_CHUNK_TYPE: &str = "Unknown Chunk";
 
-    static ref SCTP_PROTOCOLS_MAP: RwLock<HashMap<u32, LayerCreatorFn>> = RwLock::new(HashMap::new());
+fn get_chunk_display_map() -> &'static HashMap<u8, &'static str> {
+    static CHUNK_DISPLAY_MAP: OnceLock<HashMap<u8, &'static str>> = OnceLock::new();
+    CHUNK_DISPLAY_MAP.get_or_init(|| {
+    // A Map of Chunk Type to Display String
+    let mut m = HashMap::new();
+    m.insert(0, "DATA Chunk");
+    m.insert(1, "INIT Chunk");
+    m.insert(2, "INIT-ACK Chunk");
+    m.insert(3, "SACK Chunk");
+    m.insert(4, "HEARTBEAT Chunk");
+    m.insert(5, "HEARTBEAT-ACK Chunk");
+    m.insert(6, "ABORT Chunk");
+    m.insert(7, "SHUTDOWN Chunk");
+    m.insert(8, "SHUTDOWN-ACK Chunk");
+    m.insert(9, "ERROR Chunk");
+    m.insert(10, "COOKIE-ECHO Chunk");
+    m.insert(11, "COOKIE-ACK Chunk");
+    m.insert(12, "ECNE Chunk");
+    m.insert(13, "CWR Chunk");
+    m.insert(14, "SHUTDOWN_COMPLETE Chunk");
+    m.insert(15, "AUTH Chunk");
+    m.insert(64, "I-DATA Chunk");
+    m.insert(128, "ASCONF-ACK Chunk");
+    m.insert(130, "RE-CONFIG Chunk");
+    m.insert(132, "PAD Chunk");
+    m.insert(192, "FORWARD-TSN Chunk");
+    m.insert(193, "ASCONF Chunk");
+    m.insert(195, "I-FORWARD-TSN Chunk");
+    m})
+}
+
+fn get_sctp_protocols_map() -> &'static RwLock<HashMap<u32, LayerCreatorFn>> {
+    static SCTP_PROTOCOLS_MAP: OnceLock<RwLock<HashMap<u32, LayerCreatorFn>>> = OnceLock::new();
+    SCTP_PROTOCOLS_MAP.get_or_init(|| RwLock::new(HashMap::new()))
 }
 
 /// SCTP Protocol Number
@@ -53,9 +56,7 @@ pub const IPPROTO_SCTP: u8 = 132_u8;
 ///
 /// This will be used by M3UA (say)
 pub fn register_datachunk_protocol(proto: u32, creator: LayerCreatorFn) -> Result<(), Error> {
-    lazy_static::initialize(&SCTP_PROTOCOLS_MAP);
-
-    let mut map = SCTP_PROTOCOLS_MAP.write().unwrap();
+    let mut map = get_sctp_protocols_map().write().unwrap();
     if map.contains_key(&proto) {
         return Err(Error::RegisterError(format!("SCTP Proto: {}", proto)));
     }
@@ -66,7 +67,7 @@ pub fn register_datachunk_protocol(proto: u32, creator: LayerCreatorFn) -> Resul
 
 // Register ourselves With IPv4 and IPv6
 pub(crate) fn register_defaults() -> Result<(), Error> {
-    lazy_static::initialize(&SCTP_PROTOCOLS_MAP);
+    get_sctp_protocols_map();
 
     ipv4::register_protocol(IPPROTO_SCTP, SCTP::creator)?;
     ipv6::register_next_header(IPPROTO_SCTP, SCTP::creator)?;
@@ -155,7 +156,7 @@ where
     let mut state = serializer.serialize_struct("chunks", chunks.len())?;
     for chunk in chunks {
         state.serialize_field(
-            CHUNK_DISPLAY_MAP
+            get_chunk_display_map()
                 .get(&chunk.chunk_type())
                 .unwrap_or(&UNKNOWN_CHUNK_TYPE),
             chunk,
@@ -218,7 +219,7 @@ impl SCTP {
         let payload_proto = u32::from_be_bytes(bytes[start..start + 4].try_into().unwrap());
         start += 4;
 
-        let map = SCTP_PROTOCOLS_MAP.read().unwrap();
+        let map = get_sctp_protocols_map().read().unwrap();
         let layer_creator = map.get(&payload_proto);
         let payload = match layer_creator {
             None => {

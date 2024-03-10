@@ -4,9 +4,8 @@ use core::fmt::Debug;
 
 // FIXME: Should work with `no_std`
 use std::collections::HashMap;
-use std::sync::RwLock;
+use std::sync::{OnceLock, RwLock};
 
-use lazy_static::lazy_static;
 use serde::{ser::SerializeStruct, Serialize, Serializer};
 
 use crate::errors::Error;
@@ -16,9 +15,9 @@ use crate::Layer;
 #[cfg(feature = "python-bindings")]
 use pyo3::prelude::*;
 
-lazy_static! {
-    static ref ENCAP_TYPES_MAP: RwLock<HashMap<EncapType, LayerCreatorFn>> =
-        RwLock::new(HashMap::new());
+fn get_encap_types_map() -> &'static RwLock<HashMap<EncapType, LayerCreatorFn>> {
+    static ENCAP_TYPES_MAP: OnceLock<RwLock<HashMap<EncapType, LayerCreatorFn>>> = OnceLock::new();
+    ENCAP_TYPES_MAP.get_or_init(|| RwLock::new(HashMap::new()))
 }
 
 #[derive(Debug, Default, Serialize)]
@@ -28,7 +27,7 @@ struct Timestamp {
 }
 
 pub(crate) fn register_defaults() -> Result<(), Error> {
-    lazy_static::initialize(&ENCAP_TYPES_MAP);
+    get_encap_types_map();
 
     Ok(())
 }
@@ -112,7 +111,7 @@ impl Packet {
     /// `scalpel` itself. A client will want to register it's own decoding function by using this
     /// API.
     pub fn register_encap_type(encap: EncapType, creator: LayerCreatorFn) -> Result<(), Error> {
-        let mut map = ENCAP_TYPES_MAP.write().unwrap();
+        let mut map = get_encap_types_map().write().unwrap();
         if map.contains_key(&encap) {
             return Err(Error::RegisterError(format!("Encap: {}", encap)));
         }
@@ -132,7 +131,7 @@ impl Packet {
 
         let l2: Box<dyn Layer + Send>;
         {
-            let map = ENCAP_TYPES_MAP.read().unwrap();
+            let map = get_encap_types_map().read().unwrap();
             let creator_fn = map.get(&encap);
             if creator_fn.is_none() {
                 let _ = core::mem::replace(&mut p.unprocessed, bytes.into());

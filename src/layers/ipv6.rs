@@ -3,9 +3,8 @@
 use core::convert::TryInto;
 
 use std::collections::HashMap;
-use std::sync::RwLock;
+use std::sync::{RwLock,OnceLock};
 
-use lazy_static::lazy_static;
 use serde::Serialize;
 
 use crate::errors::Error;
@@ -15,8 +14,10 @@ use crate::Layer;
 /// Basic Length of the IPv6 Header
 pub const IPV6_BASE_HEADER_LENGTH: usize = 40_usize;
 
-lazy_static! {
-    static ref NEXT_HEADERS_MAP: RwLock<HashMap<u8, LayerCreatorFn>> = RwLock::new(HashMap::new());
+
+fn get_next_headers_map() -> &'static RwLock<HashMap<u8, LayerCreatorFn>> {
+    static NEXT_HEADERS_MAP: OnceLock<RwLock<HashMap<u8, LayerCreatorFn>>> = OnceLock::new();
+    NEXT_HEADERS_MAP.get_or_init(|| RwLock::new(HashMap::new()))
 }
 
 // Register ourselves to well-known Layer 2
@@ -25,7 +26,7 @@ lazy_static! {
 pub(crate) fn register_defaults() -> Result<(), Error> {
     use crate::layers::ethernet::register_ethertype;
 
-    lazy_static::initialize(&NEXT_HEADERS_MAP);
+    get_next_headers_map();
     register_ethertype(crate::types::ETHERTYPE_IP6, IPv6::creator)?;
 
     Ok(())
@@ -37,9 +38,7 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
 /// Protocol][`crate::layers::tcp`] would call this function with a header value of 6 and creator
 /// function for [`TCP`][`crate::layers::tcp::TCP`].
 pub fn register_next_header(header: u8, creator: LayerCreatorFn) -> Result<(), Error> {
-    lazy_static::initialize(&NEXT_HEADERS_MAP);
-
-    let mut map = NEXT_HEADERS_MAP.write().unwrap();
+    let mut map = get_next_headers_map().write().unwrap();
 
     if map.contains_key(&header) {
         return Err(Error::RegisterError(format!(
@@ -94,7 +93,7 @@ impl Layer for IPv6 {
         self.src_addr = bytes[8..24].try_into().unwrap();
         self.dst_addr = bytes[24..40].try_into().unwrap();
 
-        let map = NEXT_HEADERS_MAP.read().unwrap();
+        let map = get_next_headers_map().read().unwrap();
         let layer = map.get(&self.next_hdr);
         match layer {
             None => Ok((None, IPV6_BASE_HEADER_LENGTH)),

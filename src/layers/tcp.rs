@@ -2,9 +2,8 @@
 use core::convert::TryInto;
 
 use std::collections::HashMap;
-use std::sync::RwLock;
+use std::sync::{RwLock,OnceLock};
 
-use lazy_static::lazy_static;
 use serde::Serialize;
 
 use crate::errors::Error;
@@ -13,8 +12,10 @@ use crate::Layer;
 
 use crate::layers::{ipv4, ipv6};
 
-lazy_static! {
-    static ref TCP_APPS_MAP: RwLock<HashMap<u16, LayerCreatorFn>> = RwLock::new(HashMap::new());
+
+fn get_tcp_apps_map() -> &'static RwLock<HashMap<u16, LayerCreatorFn>> {
+    static TCP_APPS_MAP: OnceLock<RwLock<HashMap<u16, LayerCreatorFn>>> = OnceLock::new();
+    TCP_APPS_MAP.get_or_init(|| RwLock::new(HashMap::new()))
 }
 
 /// TCP header length
@@ -25,7 +26,7 @@ pub const IPPROTO_TCP: u8 = 6_u8;
 
 // Register ourselves With IPv4 and IPv6
 pub(crate) fn register_defaults() -> Result<(), Error> {
-    lazy_static::initialize(&TCP_APPS_MAP);
+    get_tcp_apps_map();
 
     ipv4::register_protocol(IPPROTO_TCP, TCP::creator)?;
     ipv6::register_next_header(IPPROTO_TCP, TCP::creator)?;
@@ -39,9 +40,7 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
 /// the Source or Destination port matches one of the ports. For example HTTP Protocol layer would
 /// register itself with port 80 with the TCP layer.
 pub fn register_app(port: u16, app: LayerCreatorFn) -> Result<(), Error> {
-    lazy_static::initialize(&TCP_APPS_MAP);
-
-    let mut map = TCP_APPS_MAP.write().unwrap();
+    let mut map = get_tcp_apps_map().write().unwrap();
 
     if map.contains_key(&port) {
         return Err(Error::RegisterError(format!("TCP Port: {}", port)));
@@ -96,7 +95,7 @@ impl Layer for TCP {
         self.checksum = (bytes[16] as u16) << 8 | (bytes[17] as u16);
         self.urgent_ptr = (bytes[18] as u16) << 8 | (bytes[19] as u16);
 
-        let map = TCP_APPS_MAP.read().unwrap();
+        let map = get_tcp_apps_map().read().unwrap();
         let app = map.get(&self.dst_port).or_else(|| map.get(&self.src_port));
 
         Ok((app.map(|creator_fn| creator_fn()), TCP_BASE_HEADER_LENGTH))

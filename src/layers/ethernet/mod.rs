@@ -4,9 +4,8 @@ use core::convert::TryInto;
 
 // FIXME: Should work with no_std
 use std::collections::HashMap;
-use std::sync::RwLock;
+use std::sync::{RwLock,OnceLock};
 
-use lazy_static::lazy_static;
 use serde::Serialize;
 
 use crate::errors::Error;
@@ -15,19 +14,18 @@ use crate::{Layer, Packet, ENCAP_TYPE_ETH};
 
 pub const ETH_HEADER_LENGTH: usize = 14_usize;
 
-lazy_static! {
+pub fn get_ethertypes_map() -> &'static RwLock<HashMap<EtherType, LayerCreatorFn>> {
     /// A Map maintaining EtherType -> Creator fns for Layer Creators of L3 Layers.
     ///
     /// The creator function simply creates a `default` L3 struct that implements the dissector
     /// for the Layer.
-    pub(crate) static ref ETHERTYPES_MAP: RwLock<HashMap<EtherType, LayerCreatorFn>> =
-        RwLock::new(HashMap::new());
-
+    pub(crate) static ETHERTYPES_MAP: OnceLock<RwLock<HashMap<EtherType, LayerCreatorFn>>> = OnceLock::new();
+    ETHERTYPES_MAP.get_or_init(|| RwLock::new(HashMap::new()))
 }
 
 // Register our Encap Types with the Packet.
 pub(crate) fn register_defaults() -> Result<(), Error> {
-    lazy_static::initialize(&ETHERTYPES_MAP);
+    get_ethertypes_map();
 
     Packet::register_encap_type(ENCAP_TYPE_ETH, Ethernet::creator)
 }
@@ -38,9 +36,7 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
 /// by calling this function. For example [`crate::layers::ipv4`] would call `register_ethertype`
 /// with [`EtherType`] value of 0x0800, passing the creator function for that layer.
 pub fn register_ethertype(eth_type: EtherType, layer: LayerCreatorFn) -> Result<(), Error> {
-    lazy_static::initialize(&ETHERTYPES_MAP);
-
-    let mut map = ETHERTYPES_MAP.write().unwrap();
+    let mut map = get_ethertypes_map().write().unwrap();
     if map.contains_key(&eth_type) {
         return Err(Error::RegisterError(format!("ether_type: {}", eth_type)));
     }
@@ -80,7 +76,7 @@ impl Layer for Ethernet {
         self.src_mac = bytes[6..12].try_into()?;
         self.ethertype = (bytes[12] as u16) << 8 | bytes[13] as u16;
 
-        let map = ETHERTYPES_MAP.read().unwrap();
+        let map = get_ethertypes_map().read().unwrap();
         let layer = map.get(&self.ethertype);
         match layer {
             None => Ok((None, ETH_HEADER_LENGTH)),
