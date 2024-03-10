@@ -1,9 +1,8 @@
 //! UDP Layer
 
 use std::collections::HashMap;
-use std::sync::RwLock;
+use std::sync::{RwLock,OnceLock};
 
-use lazy_static::lazy_static;
 use serde::Serialize;
 
 use crate::errors::Error;
@@ -12,8 +11,9 @@ use crate::Layer;
 
 use crate::layers::{ipv4, ipv6};
 
-lazy_static! {
-    static ref UDP_APPS_MAP: RwLock<HashMap<u16, LayerCreatorFn>> = RwLock::new(HashMap::new());
+fn get_udp_apps_map() -> &'static RwLock<HashMap<u16, LayerCreatorFn>> {
+    static UDP_APPS_MAP: OnceLock<RwLock<HashMap<u16, LayerCreatorFn>>> = OnceLock::new();
+    UDP_APPS_MAP.get_or_init(|| RwLock::new(HashMap::new()))
 }
 
 /// UDP header length
@@ -23,7 +23,7 @@ pub const IPPROTO_UDP: u8 = 17_u8;
 
 // Register UDP with Protocol Handler in IPv4 and IPv6
 pub(crate) fn register_defaults() -> Result<(), Error> {
-    lazy_static::initialize(&UDP_APPS_MAP);
+    get_udp_apps_map();
 
     ipv4::register_protocol(IPPROTO_UDP, UDP::creator)?;
     ipv6::register_next_header(IPPROTO_UDP, UDP::creator)?;
@@ -36,9 +36,7 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
 /// This is a public API function for an App whose dissector should be called after UDP Layer's if
 /// the Source or Destination port matches one of the ports.
 pub fn register_app(port: u16, app: LayerCreatorFn) -> Result<(), Error> {
-    lazy_static::initialize(&UDP_APPS_MAP);
-
-    let mut map = UDP_APPS_MAP.write().unwrap();
+    let mut map = get_udp_apps_map().write().unwrap();
 
     if map.contains_key(&port) {
         return Err(Error::RegisterError(format!("UDP Port: {}", port)));
@@ -81,7 +79,7 @@ impl Layer for UDP {
         self.length = (bytes[4] as u16) << 8 | (bytes[5] as u16);
         self.checksum = (bytes[6] as u16) << 8 | (bytes[7] as u16);
 
-        let map = UDP_APPS_MAP.read().unwrap();
+        let map = get_udp_apps_map().read().unwrap();
 
         let app = map.get(&self.dst_port).or_else(|| map.get(&self.src_port));
         Ok((app.map(|creator_fn| creator_fn()), UDP_HEADER_LENGTH))

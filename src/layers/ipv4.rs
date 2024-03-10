@@ -3,9 +3,8 @@
 use core::convert::TryInto as _;
 
 use std::collections::HashMap;
-use std::sync::RwLock;
+use std::sync::{OnceLock, RwLock};
 
-use lazy_static::lazy_static;
 use serde::Serialize;
 
 use crate::errors::Error;
@@ -21,8 +20,9 @@ pub const IPV4_OPTION_RR: u8 = 7;
 pub const IPV4_OPTION_MTUP: u8 = 11;
 pub const IPV4_OPTION_MTUR: u8 = 12;
 
-lazy_static! {
-    static ref PROTOCOLS_MAP: RwLock<HashMap<u8, LayerCreatorFn>> = RwLock::new(HashMap::new());
+fn get_protocol_map() -> &'static RwLock<HashMap<u8, LayerCreatorFn>> {
+    static PROTOCOLS_MAP: OnceLock<RwLock<HashMap<u8, LayerCreatorFn>>> = OnceLock::new();
+    PROTOCOLS_MAP.get_or_init(|| RwLock::new(HashMap::new()))
 }
 
 // Register ourselves to well-known Layer 2
@@ -31,7 +31,7 @@ lazy_static! {
 pub(crate) fn register_defaults() -> Result<(), Error> {
     use crate::layers::ethernet::register_ethertype;
 
-    lazy_static::initialize(&PROTOCOLS_MAP);
+    get_protocol_map();
 
     register_ethertype(crate::types::ETHERTYPE_IP, IPv4::creator)?;
 
@@ -45,9 +45,7 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
 /// protocol number 6 and similarly [UDP Protocol][`crate::layers::udp`] would call this function
 /// with a protocol number of 17.
 pub fn register_protocol(proto: u8, creator: LayerCreatorFn) -> Result<(), Error> {
-    lazy_static::initialize(&PROTOCOLS_MAP);
-
-    let mut map = PROTOCOLS_MAP.write().unwrap();
+    let mut map = get_protocol_map().write().unwrap();
     if map.contains_key(&proto) {
         return Err(Error::RegisterError(format!("proto: {}", proto)));
     }
@@ -291,8 +289,7 @@ impl Layer for IPv4 {
         let consumed = self.options_from_bytes(&bytes[decoded..], remaining)?;
         decoded += consumed;
         // remaining -= consumed;
-
-        let map = PROTOCOLS_MAP.read().unwrap();
+        let map = get_protocol_map().read().unwrap();
         let layer = map.get(&self.proto);
 
         match layer {

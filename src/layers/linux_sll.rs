@@ -7,7 +7,7 @@ use serde::Serialize;
 use crate::errors::Error;
 use crate::{Layer, Packet, ENCAP_TYPE_LINUX_SLL};
 
-use crate::layers::ethernet::ETHERTYPES_MAP;
+use crate::layers::ethernet::get_ethertypes_map;
 
 #[derive(Debug, Default, Serialize)]
 pub struct LinuxSll {
@@ -49,7 +49,7 @@ impl Layer for LinuxSll {
         self.ll_addr = bytes[6..14].try_into().unwrap();
         self.protocol = u16::from_be_bytes(bytes[14..16].try_into().unwrap());
 
-        let map = ETHERTYPES_MAP.read().unwrap();
+        let map = get_ethertypes_map().read().unwrap();
         let layer = map.get(&self.protocol);
         match layer {
             None => Ok((None, LINUX_SLL_HEADER_LENGTH)),
