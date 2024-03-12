@@ -8,7 +8,6 @@ use crate::errors::Error;
 use crate::layers::ipv6;
 use crate::types::{IPv6Address, MACAddress};
 use crate::Layer;
-
 /// IANA Assigned protocol number for ICMP
 pub const IPPROTO_ICMPV6: u8 = 58_u8;
 /// ICMP header length
@@ -31,6 +30,55 @@ pub const ICMPV6_NEIGHBOR_SOLICITATION: u8 = 135;
 pub const ICMPV6_NEIGHBOR_ADVERTISEMENT: u8 = 136;
 pub const ICMPV6_REDIRECT: u8 = 137;
 
+fn handle_icmpv6_options(bytes: &[u8], decoded: &mut usize) -> Vec<IcmpV6Option> {
+    let mut options: Vec<IcmpV6Option> = Vec::new();
+    while *decoded < bytes.len() && bytes[*decoded] != 0 {
+        // Loop until padding byte
+        let option_type = u8::from_be(bytes[*decoded]);
+        dbg!(option_type);
+        let length = u8::from_be(bytes[*decoded + 1]);
+        dbg!(length);
+        let option_data = &bytes[(*decoded + 2)..(*decoded + (length << 3) as usize)];
+
+        match option_type {
+            1 => options.push(IcmpV6Option::LinkLayerAddress(Icmpv6LinkLayerAddress {
+                option_type,
+                length,
+                link_layer_address: option_data.try_into().unwrap(),
+            })),
+
+            3 => options.push(IcmpV6Option::PrefixInfo(Icmpv6PrefixInfo {
+                option_type,
+                length,
+                prefix_len: u8::from_be(option_data[0]),
+                flag: Icmpv6OptionsFlag {
+                    on_link_flag: ((option_data[1] >> 7) & 0x01) == 0x01,
+                    autonomous_address_congif_flag: ((option_data[1] >> 6) & 0x01) == 0x01,
+                },
+                valid_lifetime: u32::from_be_bytes(option_data[2..6].try_into().unwrap()),
+                preferred_lifetime: u32::from_be_bytes(option_data[6..10].try_into().unwrap()),
+                prefix: option_data[14..30].try_into().unwrap(),
+            })),
+
+            5 => options.push(IcmpV6Option::Mtu(Icmpv6OptionsMTU {
+                option_type,
+                length,
+                mtu: u32::from_be_bytes(option_data[2..6].try_into().unwrap()),
+            })),
+
+            14 => options.push(IcmpV6Option::Nonce(Icmpv6Nonce {
+                option_type,
+                length,
+                nonce: option_data.try_into().unwrap(),
+            })),
+
+            _ => options.push(IcmpV6Option::Unsupported(option_data.to_vec())), // Unsupported option
+        }
+        *decoded += (length << 3) as usize;
+    }
+    options
+}
+
 #[derive(Default, Debug, Serialize)]
 #[serde(untagged)]
 pub enum Icmpv6Type {
@@ -42,9 +90,24 @@ pub enum Icmpv6Type {
     EchoReply(Icmpv6Echo),
     PacketSizeTooBig(Icmpv6PacketSizeTooBig),
     RouterAdvertisement(Icmpv6RouterAdvertisement),
+    RouterSolicitation(Icmpv6RouterSolicitation),
     NeighborSolicitation(Icmpv6NeighborSolicitation),
     NeighborAdvertisement(Icmpv6NeighborAdvertisement),
     Redirect(Icmpv6Redirect),
+}
+
+#[derive(Debug, Serialize)]
+enum IcmpV6Option {
+    #[serde(rename = "link_layer_address")]
+    LinkLayerAddress(Icmpv6LinkLayerAddress),
+    #[serde(rename = "prefix_information")]
+    PrefixInfo(Icmpv6PrefixInfo),
+    #[serde(rename = "mtu")]
+    Mtu(Icmpv6OptionsMTU),
+    #[serde(rename = "nonce")]
+    Nonce(Icmpv6Nonce),
+    #[serde(rename = "unsupported")]
+    Unsupported(Vec<u8>),
 }
 
 #[derive(Debug, Default, Serialize, Copy, Clone)]
@@ -92,29 +155,37 @@ pub struct Icmpv6RouterAdvertisement {
     router_lifetime: u16,
     reachable_time: u32,
     retrans_timer: u32,
-    src_link_layer: Icmpv6LinkLayerAddress,
-    mtu: Icmpv6OptionsMTU,
-    prefix_information: Icmpv6PrefixInfo,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    options: Vec<IcmpV6Option>,
+}
+
+#[derive(Default, Debug, Serialize)]
+pub struct Icmpv6RouterSolicitation {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    options: Vec<IcmpV6Option>,
 }
 
 #[derive(Default, Debug, Serialize)]
 pub struct Icmpv6NeighborSolicitation {
     target_address: IPv6Address,
-    src_link_layer: Icmpv6LinkLayerAddress,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    options: Vec<IcmpV6Option>,
 }
 
 #[derive(Default, Debug, Serialize)]
 pub struct Icmpv6NeighborAdvertisement {
     flags: NeighborAdvFlags,
     target_address: IPv6Address,
-    target_link_address: Icmpv6LinkLayerAddress,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    options: Vec<IcmpV6Option>,
 }
 
 #[derive(Default, Debug, Serialize)]
 pub struct Icmpv6Redirect {
     target_address: IPv6Address,
     destination_address: IPv6Address,
-    target_link_address: Icmpv6LinkLayerAddress,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    options: Vec<IcmpV6Option>,
 }
 
 #[derive(Default, Debug, Serialize)]
@@ -146,6 +217,17 @@ pub struct Icmpv6PrefixInfo {
     valid_lifetime: u32,
     preferred_lifetime: u32,
     prefix: IPv6Address,
+}
+
+#[derive(Default, Debug, Serialize)]
+pub struct Icmpv6Nonce {
+    option_type: u8,
+    length: u8,
+    #[serde(
+        skip_serializing_if = "Vec::is_empty",
+        serialize_with = "hex::serde::serialize"
+    )]
+    nonce: Vec<u8>,
 }
 
 /// Structure representing the ICMPv6 Header
@@ -232,49 +314,8 @@ impl Layer for ICMPv6 {
                 let reachable_time: u32 = u32::from_be_bytes(bytes[8..12].try_into().unwrap());
                 let retrans_timer: u32 = u32::from_be_bytes(bytes[12..16].try_into().unwrap());
 
-                let option_type: u8 = u8::from_be(bytes[16]);
-                let length = u8::from_be(bytes[17]);
-                decoded = 17 + ((length << 3) as usize) - 2;
-                let src_link_layer = Icmpv6LinkLayerAddress {
-                    option_type,
-                    length,
-                    link_layer_address: bytes[18..decoded + 1].try_into().unwrap(),
-                };
-                decoded += 1;
-                let mtu = Icmpv6OptionsMTU {
-                    option_type: u8::from_be(bytes[decoded]),
-                    length: u8::from_be(bytes[decoded + 1]),
-
-                    mtu: u32::from_be_bytes(
-                        bytes[(decoded + 4)..(decoded + 8)].try_into().unwrap(),
-                    ),
-                };
-                decoded += 8;
-                let data_offset = decoded;
-                let prefix_information = Icmpv6PrefixInfo {
-                    option_type: u8::from_be(bytes[data_offset]),
-                    length: u8::from_be(bytes[data_offset + 1]),
-                    prefix_len: u8::from_be(bytes[data_offset + 2]),
-                    flag: Icmpv6OptionsFlag {
-                        on_link_flag: ((bytes[data_offset + 3] >> 7) & 0x01) == 0x01,
-                        autonomous_address_congif_flag: ((bytes[data_offset + 3] >> 7) & 0x01)
-                            == 0x01,
-                    },
-                    valid_lifetime: u32::from_be_bytes(
-                        bytes[(data_offset + 4)..(data_offset + 8)]
-                            .try_into()
-                            .unwrap(),
-                    ),
-                    preferred_lifetime: u32::from_be_bytes(
-                        bytes[(data_offset + 8)..(data_offset + 12)]
-                            .try_into()
-                            .unwrap(),
-                    ),
-                    prefix: bytes[(data_offset + 16)..(data_offset + 32)]
-                        .try_into()
-                        .unwrap(),
-                };
-                decoded += 32;
+                decoded = 16;
+                let options = handle_icmpv6_options(&bytes, &mut decoded);
 
                 Icmpv6Type::RouterAdvertisement(Icmpv6RouterAdvertisement {
                     cur_hop_limit,
@@ -282,26 +323,23 @@ impl Layer for ICMPv6 {
                     router_lifetime,
                     reachable_time,
                     retrans_timer,
-                    src_link_layer,
-                    mtu,
-                    prefix_information,
+                    options,
                 })
+            }
+
+            ICMPV6_ROUTER_SOLICITATION => {
+                decoded = 8;
+                let options = handle_icmpv6_options(&bytes, &mut decoded);
+                Icmpv6Type::RouterSolicitation(Icmpv6RouterSolicitation { options })
             }
 
             ICMPV6_NEIGHBOR_SOLICITATION => {
                 let target_address = bytes[8..24].try_into().unwrap();
-                let option_type: u8 = u8::from_be(bytes[24]);
-                let length = u8::from_be(bytes[25]);
-                decoded = 25 + ((length << 3) as usize) - 2;
-                let src_link_layer = Icmpv6LinkLayerAddress {
-                    option_type,
-                    length,
-                    link_layer_address: bytes[26..decoded + 1].try_into().unwrap(),
-                };
-                decoded = 32;
+                decoded = 24;
+                let options = handle_icmpv6_options(&bytes, &mut decoded);
                 Icmpv6Type::NeighborSolicitation(Icmpv6NeighborSolicitation {
                     target_address,
-                    src_link_layer,
+                    options,
                 })
             }
 
@@ -311,37 +349,24 @@ impl Layer for ICMPv6 {
                 flags.solicited_flag = ((bytes[4] >> 6) & 0x01) == 0x01;
                 flags.override_flag = ((bytes[4] >> 5) & 0x01) == 0x01;
                 let target_address = bytes[8..24].try_into().unwrap();
-                let option_type: u8 = u8::from_be(bytes[24]);
-                let length = u8::from_be(bytes[25]);
-                decoded = 25 + ((length << 3) as usize) - 2;
-                let target_link_address = Icmpv6LinkLayerAddress {
-                    option_type,
-                    length,
-                    link_layer_address: bytes[26..decoded + 1].try_into().unwrap(),
-                };
-                decoded = 32;
+                decoded = 24;
+                let options = handle_icmpv6_options(&bytes, &mut decoded);
                 Icmpv6Type::NeighborAdvertisement(Icmpv6NeighborAdvertisement {
                     flags,
                     target_address,
-                    target_link_address,
+                    options,
                 })
             }
             ICMPV6_REDIRECT => {
                 let target_address = bytes[8..24].try_into().unwrap();
                 let destination_address = bytes[24..40].try_into().unwrap();
-                let option_type: u8 = u8::from_be(bytes[40]);
-                let length = u8::from_be(bytes[41]);
-                decoded = 41 + ((length << 3) as usize) - 2;
-                let target_link_address = Icmpv6LinkLayerAddress {
-                    option_type,
-                    length,
-                    link_layer_address: bytes[42..decoded + 1].try_into().unwrap(),
-                };
-                decoded = 48;
+                decoded = 40;
+                let options = handle_icmpv6_options(&bytes, &mut decoded);
+
                 Icmpv6Type::Redirect(Icmpv6Redirect {
                     target_address,
                     destination_address,
-                    target_link_address,
+                    options,
                 })
             }
 
