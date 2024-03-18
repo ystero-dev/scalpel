@@ -76,7 +76,7 @@ fn handle_icmpv6_options(bytes: &[u8]) -> Result<(usize, Vec<IcmpV6Option>), Err
             ICMPV6_OPTION_NONCE => options.push(IcmpV6Option::Nonce(Icmpv6Nonce {
                 option_type,
                 length,
-                nonce: option_data.try_into().unwrap(),
+                nonce: option_data.into(),
             })),
 
             _ => options.push(IcmpV6Option::Unsupported(option_data.to_vec())), // Unsupported option
@@ -119,11 +119,11 @@ enum IcmpV6Option {
 
 #[derive(Debug, Default, Serialize, Copy, Clone)]
 pub struct RouterAdvFlags {
-    managed_address_config : bool,
-    other_config : bool,
-    home_agent : bool,
-    prf : bool,
-    proxy : bool,
+    managed_address_config: bool,
+    other_config: bool,
+    home_agent: bool,
+    prf: bool,
+    proxy: bool,
 }
 
 #[derive(Debug, Default, Serialize)]
@@ -281,7 +281,7 @@ impl Layer for ICMPv6 {
             ICMPV6_ECHO_REQUEST => {
                 let identifier = (bytes[4] as u16) << 8 | (bytes[5] as u16);
                 let sequence_number = (bytes[6] as u16) << 8 | (bytes[7] as u16);
-                let data = bytes[8..].try_into().unwrap();
+                let data = bytes[8..].into();
                 decoded = bytes.len();
                 Icmpv6Type::EchoRequest(Icmpv6Echo {
                     identifier,
@@ -293,7 +293,7 @@ impl Layer for ICMPv6 {
             ICMPV6_ECHO_REPLY => {
                 let identifier = (bytes[4] as u16) << 8 | (bytes[5] as u16);
                 let sequence_number = (bytes[6] as u16) << 8 | (bytes[7] as u16);
-                let data = bytes[8..].try_into().unwrap();
+                let data = bytes[8..].into();
                 decoded = bytes.len();
                 Icmpv6Type::EchoReply(Icmpv6Echo {
                     identifier,
@@ -319,7 +319,7 @@ impl Layer for ICMPv6 {
                     managed_address_config: ((bytes[5] >> 7) & 0x01) == 0x01,
                     other_config: ((bytes[5] >> 6) & 0x01) == 0x01,
                     home_agent: ((bytes[5] >> 5) & 0x01) == 0x01,
-                    prf : ((bytes[5] >> 3) & 0x01) == 0x01,
+                    prf: ((bytes[5] >> 3) & 0x01) == 0x01,
                     proxy: ((bytes[5] >> 2) & 0x01) == 0x01,
                 };
 
@@ -360,10 +360,14 @@ impl Layer for ICMPv6 {
             }
 
             ICMPV6_NEIGHBOR_ADVERTISEMENT => {
-                let mut flags = NeighborAdvFlags::default();
-                flags.from_router = ((bytes[4] >> 7) & 0x01) == 0x01;
-                flags.solicited_flag = ((bytes[4] >> 6) & 0x01) == 0x01;
-                flags.override_flag = ((bytes[4] >> 5) & 0x01) == 0x01;
+                let from_router = ((bytes[4] >> 7) & 0x01) == 0x01;
+                let solicited_flag = ((bytes[4] >> 6) & 0x01) == 0x01;
+                let override_flag = ((bytes[4] >> 5) & 0x01) == 0x01;
+                let flags = NeighborAdvFlags {
+                    from_router,
+                    solicited_flag,
+                    override_flag,
+                };
                 let target_address = bytes[8..24].try_into().unwrap();
                 decoded = 24;
                 let (option_decoded, options) = handle_icmpv6_options(&bytes[decoded..])?;
