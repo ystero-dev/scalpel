@@ -190,7 +190,7 @@ impl Layer for ICMP {
                     gateway_address: bytes[4..8].try_into().unwrap(),
                     original_datagram: OriginalDatagramPortion {
                         ip_header,
-                        data: bytes[data_offset..].try_into().unwrap(),
+                        data: bytes[data_offset..].into(),
                     },
                 })
             }
@@ -201,7 +201,7 @@ impl Layer for ICMP {
                 decoded = bytes.len();
                 IcmpType::Error(OriginalDatagramPortion {
                     ip_header,
-                    data: bytes[data_offset..].try_into().unwrap(),
+                    data: bytes[data_offset..].into(),
                 })
             }
             _ => {

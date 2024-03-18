@@ -60,23 +60,22 @@ impl Layer for MPLS {
         let mut byte_offset = 0;
 
         loop {
-            let mut current_label = MPLSLabel::default();
-
             //FIXME:For now the first few bits are not useful in label,exp and bos
-            current_label.label = u32::from_be_bytes(
-                bytes[(byte_offset + 0)..(byte_offset + 4)]
-                    .try_into()
-                    .unwrap(),
-            ) as u32
-                >> 12;
-            current_label.exp = u8::from_be(bytes[byte_offset + 2] << 4) >> 5;
-            current_label.bos = bytes[byte_offset + 2] & 0x01 == 0x01;
-            current_label.ttl = bytes[byte_offset + 3];
+            let label =
+                u32::from_be_bytes(bytes[byte_offset..(byte_offset + 4)].try_into().unwrap()) >> 12;
+            let exp = u8::from_be(bytes[byte_offset + 2] << 4) >> 5;
+            let bos = bytes[byte_offset + 2] & 0x01 == 0x01;
+            let ttl = bytes[byte_offset + 3];
 
-            self.labels.push(current_label);
+            self.labels.push(MPLSLabel {
+                label,
+                exp,
+                bos,
+                ttl,
+            });
             byte_offset += MPLS_HEADER_LENGTH;
 
-            if current_label.bos == true {
+            if bos {
                 break;
             }
         }
