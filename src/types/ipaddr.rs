@@ -13,6 +13,18 @@ use crate::errors::Error as CrateError;
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct IPv4Address([u8; 4]);
 
+impl IPv4Address {
+    /// Returns a slice containing the entire inner array.
+    pub const fn as_slice(&self) -> &[u8] {
+        &self.0
+    }
+
+    /// Returns a mutable slice containing the entire inner array.
+    pub fn as_mut_slice(&mut self) -> &mut [u8] {
+        &mut self.0
+    }
+}
+
 impl From<[u8; 4]> for IPv4Address {
     fn from(value: [u8; 4]) -> Self {
         Self(value)
@@ -70,6 +82,18 @@ impl Serialize for IPv4Address {
 
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct IPv6Address([u16; 8]);
+
+impl IPv6Address {
+    /// Returns a slice containing the entire inner array.
+    pub const fn as_slice(&self) -> &[u16] {
+        &self.0
+    }
+
+    /// Returns a mutable slice containing the entire inner array.
+    pub fn as_mut_slice(&mut self) -> &mut [u16] {
+        &mut self.0
+    }
+}
 
 impl From<[u16; 8]> for IPv6Address {
     fn from(value: [u16; 8]) -> Self {

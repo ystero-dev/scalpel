@@ -13,12 +13,30 @@ use crate::errors::Error as CrateError;
 #[derive(Default, Clone)]
 pub struct MACAddress([u8; 6]);
 
+impl MACAddress {
+    /// Returns a slice containing the entire inner array.
+    pub const fn as_slice(&self) -> &[u8] {
+        &self.0
+    }
+
+    /// Returns a mutable slice containing the entire inner array.
+    pub fn as_mut_slice(&mut self) -> &mut [u8] {
+        &mut self.0
+    }
+}
+
 impl Serialize for MACAddress {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         serializer.serialize_str(format!("{}", self).as_str())
+    }
+}
+
+impl From<[u8; 6]> for MACAddress {
+    fn from(value: [u8; 6]) -> Self {
+        Self(value)
     }
 }
 

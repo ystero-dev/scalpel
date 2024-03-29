@@ -63,6 +63,10 @@ path = "examples/packet_as_json.rs"
 name = "pcap"
 path = "examples/pcap_example.rs"
 
+[[example]]
+name = "packet_sculpting"
+path = "examples/packet_sculpting.rs"
+
 [build-dependencies]
 syn = { version = "1.0", features = ["full"]}
 walkdir = "2"

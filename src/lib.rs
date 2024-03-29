@@ -60,6 +60,8 @@ pub mod layer;
 
 pub mod types;
 
+pub mod builder;
+
 #[doc(inline)]
 pub use layers::register_defaults;
 
