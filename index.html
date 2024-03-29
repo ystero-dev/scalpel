@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <title>Scalpel using WASM</title>
+</head>
+<body>
+
+<h1>Scalpel using WASM</h1>
+<h2>Byte Stream to be dissected</h2>
+<p id="byteStream"></p>
+
+<button id="dissectButton">Dissect Packet</button>
+<div id="output"></div>
+
+<script type="module">
+  import init, { dissect_packet } from "./pkg/scalpel.js";
+
+  const byteStream = "003096e6fc3900309605283888470001ddff45c0002800030000ff06a4e80a0102010a2200012af90017983210058dd58ea55010102099cd00000000";
+
+  async function initialize() {
+    await init();
+    showByteStream();
+    document.getElementById('dissectButton').addEventListener('click', handleDissectClick);
+  }
+
+  function handleDissectClick() {
+    const result = dissect_packet(byteStream);
+    document.getElementById('output').innerText = result;
+  }
+
+  function showByteStream() {
+    document.getElementById('byteStream').innerText = byteStream;
+  }
+
+  window.onload = initialize;
+</script>
+
+</body>
+</html>
