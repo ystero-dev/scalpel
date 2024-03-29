@@ -42,11 +42,11 @@ jobs:
         rustup default ${{ matrix.cfg_release_channel }}
     - name: Build with Python Bindings
       run: |
-        maturin build --verbose --all-features --release --out dist
+        maturin build --verbose --features python-bindings,logging --release --out dist
     - name: Run tests with Python Bindings
       run: |
         rustc -Vv
         cargo -V
-        cargo test --verbose --all-features
+        cargo test --verbose --features python-bindings,logging
         python -m pip install scalpel_python_bindings --find-links dist/
         python -c 'import scalpel; print(scalpel.Packet.from_bytes_py(bytes.fromhex("000573a007d168a3c4f949f686dd600000000020064020010470e5bfdead49572174e82c48872607f8b0400c0c03000000000000001af9c7001903a088300000000080022000da4700000204058c0103030801010402"), 1).as_json())'
