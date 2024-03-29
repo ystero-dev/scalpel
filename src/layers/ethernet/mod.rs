@@ -55,6 +55,13 @@ pub struct Ethernet {
 }
 
 impl Ethernet {
+    pub fn new() -> Self {
+        Self {
+            ethertype: 0xFFFF,
+            ..Default::default()
+        }
+    }
+
     pub(crate) fn creator() -> Box<dyn Layer + Send> {
         Box::<Ethernet>::default()
     }
@@ -82,6 +89,35 @@ impl Layer for Ethernet {
             None => Ok((None, ETH_HEADER_LENGTH)),
             Some(l3_creator) => Ok((Some(l3_creator()), ETH_HEADER_LENGTH)),
         }
+    }
+
+    fn stack_and_encode(
+        &mut self,
+        next_layer: Option<&[u8]>,
+        info: &str,
+    ) -> Result<Vec<u8>, Error> {
+        let mut result = Vec::with_capacity(ETH_HEADER_LENGTH);
+
+        result.extend(self.dst_mac.as_slice());
+        result.extend(self.src_mac.as_slice());
+
+        let ethertype: u16 = match info {
+            "ARP" => crate::types::ETHERTYPE_ARP,
+            "IPv4" => crate::types::ETHERTYPE_IP,
+            "IPv6" => crate::types::ETHERTYPE_IP6,
+            // FIXME: can also be `ETHERTYPE_MPLS_MULTICAST`
+            "MPLS" => crate::types::ETHERTYPE_MPLS_UNICAST,
+            "raw" => 0xffff,
+            // NOTE: should return Err instead
+            _ => unimplemented!(),
+        };
+
+        result.extend(ethertype.to_be_bytes());
+        result.extend(next_layer.unwrap_or_default());
+
+        // TODO: pad to 64 bytes(minimum packet size)
+
+        Ok(result)
     }
 
     fn name(&self) -> &'static str {

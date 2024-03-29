@@ -15,6 +15,9 @@ pub enum Error {
 
     /// A layer registration error.
     RegisterError(String),
+
+    /// Error in sculpting
+    SculptingError(String),
 }
 
 // FIXME: Should work with `no_std`

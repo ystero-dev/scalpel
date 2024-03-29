@@ -20,6 +20,8 @@ pub const IPV4_OPTION_RR: u8 = 7;
 pub const IPV4_OPTION_MTUP: u8 = 11;
 pub const IPV4_OPTION_MTUR: u8 = 12;
 
+pub const IPPROTO_RAW: u8 = 0xFF;
+
 fn get_protocol_map() -> &'static RwLock<HashMap<u8, LayerCreatorFn>> {
     static PROTOCOLS_MAP: OnceLock<RwLock<HashMap<u8, LayerCreatorFn>>> = OnceLock::new();
     PROTOCOLS_MAP.get_or_init(|| RwLock::new(HashMap::new()))
@@ -101,7 +103,17 @@ pub struct IPv4 {
 }
 
 impl IPv4 {
-    pub fn creator() -> Box<dyn Layer + Send> {
+    pub fn new() -> Self {
+        Self {
+            version: 4,
+            hdr_len: (IPV4_BASE_HEADER_LENGTH / 4) as u8,
+            proto: IPPROTO_RAW,
+            len: IPV4_BASE_HEADER_LENGTH as u16,
+            ..Default::default()
+        }
+    }
+
+    pub(crate) fn creator() -> Box<dyn Layer + Send> {
         Box::<IPv4>::default()
     }
 }
@@ -242,6 +254,10 @@ impl IPv4 {
 
         Ok(((len as u8, data), i))
     }
+
+    fn calculate_checksum(_bytes: &[u8]) -> u16 {
+        0
+    }
 }
 
 impl Layer for IPv4 {
@@ -304,6 +320,46 @@ impl Layer for IPv4 {
 
     fn short_name(&self) -> &'static str {
         "ip"
+    }
+
+    fn stack_and_encode(
+        &mut self,
+        next_layer: Option<&[u8]>,
+        info: &str,
+    ) -> Result<Vec<u8>, Error> {
+        self.len = self.hdr_len as u16 * 4 + next_layer.unwrap_or_default().len() as u16;
+        self.proto = match info {
+            "raw" => IPPROTO_RAW,
+            _ => self.proto,
+        };
+
+        let mut result = Vec::with_capacity(self.len as usize);
+
+        let byte = (self.version << 4) | self.hdr_len;
+        result.push(byte);
+        result.push(self.tos);
+        result.extend(self.len.to_be_bytes());
+        result.extend(self.id.to_be_bytes());
+
+        let word = (self.flags as u16) << 13 | self.frag_offset;
+        result.extend(word.to_be_bytes());
+        result.push(self.ttl);
+        result.push(self.proto);
+
+        let checksum_start = result.len();
+        result.extend(self.checksum.to_be_bytes());
+        result.extend(self.src_addr.as_slice());
+        result.extend(self.dst_addr.as_slice());
+
+        if !self.options.is_empty() {
+            todo!();
+        }
+
+        result.extend(next_layer.unwrap_or_default());
+
+        let checksum = IPv4::calculate_checksum(&result);
+        result[checksum_start..checksum_start + 2].copy_from_slice(&checksum.to_be_bytes());
+        Ok(result)
     }
 }
 

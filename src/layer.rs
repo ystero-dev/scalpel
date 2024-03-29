@@ -30,6 +30,22 @@ pub trait Layer: Send + Debug + erased_serde::Serialize {
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error>;
 
+    /// Main 'encoder' function.
+    ///
+    /// The return value is a `Vec<u8>` on success. This indicates the encoded packet of the
+    /// layer. Typically return a [SculptingError][`crate::errors::Error::SculptingError`],
+    /// but may as well return other values. This updates the fields of the packet using the
+    /// encoded bytes of the next layer(`next_layer`), and `info`, to provide additional details
+    /// about the packet. This can be the result of [Layer::name()][`Self::name()`]
+    /// of the next packet.
+    fn stack_and_encode(
+        &mut self,
+        _next_layer: Option<&[u8]>,
+        _info: &str,
+    ) -> Result<Vec<u8>, Error> {
+        unimplemented!()
+    }
+
     /// Name for the given layer.
     fn name(&self) -> &'static str;
 
