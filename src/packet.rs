@@ -12,7 +12,7 @@ use crate::errors::Error;
 use crate::types::{EncapType, LayerCreatorFn};
 use crate::Layer;
 
-#[cfg(feature = "python-bindings")]
+#[cfg(all(feature = "python-bindings", not(target_family = "wasm")))]
 use pyo3::prelude::*;
 
 fn get_encap_types_map() -> &'static RwLock<HashMap<EncapType, LayerCreatorFn>> {
@@ -44,7 +44,7 @@ pub(crate) fn register_defaults() -> Result<(), Error> {
 ///              Each of the following is a Layer - `Ethernet`, `IPv4`, `TCP` etc.
 ///  * `unprocessed`: The part of the original byte-stream that is not processed and captured into
 ///                   `layers` above.
-#[cfg_attr(feature = "python-bindings", pyclass)]
+#[cfg_attr(all(feature = "python-bindings", not(target_family = "wasm")), pyclass)]
 #[derive(Debug, Default, Serialize)]
 pub struct Packet {
     pub meta: PacketMetadata,
@@ -177,7 +177,7 @@ impl Packet {
 
 // Python Bindings
 #[allow(clippy::borrow_deref_ref)]
-#[cfg(feature = "python-bindings")]
+#[cfg(all(feature = "python-bindings", not(target_family = "wasm")))]
 #[pymethods]
 impl Packet {
     #[staticmethod]
@@ -192,7 +192,7 @@ impl Packet {
     }
 }
 
-#[cfg(feature = "python-bindings")]
+#[cfg(all(feature = "python-bindings", not(target_family = "wasm")))]
 pub(crate) fn register(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<Packet>()?;
     Ok(())

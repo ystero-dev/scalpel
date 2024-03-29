@@ -31,6 +31,24 @@
 //!              done in the fast, path, use this feature mainly for debugging packet dissections.
 //!              an error log is provided for the failing `register_defaults` function when this
 //!              feature is enabled.
+//! - `wasm`: Build WASM capability in the scalpel. Currently `dissect_packet` API is provided,
+//!           dissects the packet and a JSON is generated for the packet.
+//!
+//! Note: `wasm` and `python-bindings` features cannot be enabled at the same time.
+
+#[cfg(all(feature = "python-bindings", feature = "wasm"))]
+compile_error!(
+    "feature \"python-bindings\" and feature \"wasm\" cannot be enabled at the same time"
+);
+
+#[cfg(all(target_arch = "wasm32", not(feature = "wasm")))]
+compile_error!("feature \"wasm\" is required for \"wasm32\" targets.");
+
+#[cfg(all(not(target_arch = "wasm32"), feature = "wasm"))]
+compile_error!("feature \"wasm\" is only supported for \"wasm32\" targets.");
+
+#[cfg(all(target_family = "wasm", feature = "python-bindings"))]
+compile_error!("feature \"python-bindings\" is not supported for \"wasm32\" targets.");
 
 pub mod layers;
 
@@ -54,11 +72,11 @@ pub use packet::Packet;
 #[doc(inline)]
 pub use types::{ENCAP_TYPE_ETH, ENCAP_TYPE_LINUX_SLL, ENCAP_TYPE_LINUX_SLL2};
 
-#[cfg(feature = "python-bindings")]
+#[cfg(all(feature = "python-bindings", not(target_family = "wasm")))]
 use pyo3::prelude::*;
 
 /// Python bindings for packet dissection and sculpting in Rust (scalpel)
-#[cfg(feature = "python-bindings")]
+#[cfg(all(feature = "python-bindings", not(target_family = "wasm")))]
 #[pymodule]
 fn scalpel(py: Python, m: &PyModule) -> PyResult<()> {
     packet::register(py, m)?;
