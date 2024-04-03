@@ -34,6 +34,9 @@ clap = { version = "4.0" , features = ["derive"] }
 pcap = { version = "1.3"}
 criterion = "0.5"
 
+[target.'cfg(target_family = "wasm")'.dev-dependencies]
+wasm-bindgen-test = { version = "0.3"}
+
 # Required by `cargo flamegraph`
 [profile.bench]
 debug = true

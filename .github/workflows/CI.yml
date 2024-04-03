@@ -50,3 +50,15 @@ jobs:
         cargo test --verbose --features python-bindings,logging
         python -m pip install scalpel_python_bindings --find-links dist/
         python -c 'import scalpel; print(scalpel.Packet.from_bytes_py(bytes.fromhex("000573a007d168a3c4f949f686dd600000000020064020010470e5bfdead49572174e82c48872607f8b0400c0c03000000000000001af9c7001903a088300000000080022000da4700000204058c0103030801010402"), 1).as_json())'
+
+    - name: Install wasm-pack
+      run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+    - name: Run wasm-pack tests in firefox
+      run: wasm-pack test --firefox --headless --features wasm
+
+    - name: Run wasm-pack tests in chrome
+      run: wasm-pack test --chrome --headless --features wasm
+
+    - name: Run wasm-pack tests in node
+      run: wasm-pack test --node --features wasm

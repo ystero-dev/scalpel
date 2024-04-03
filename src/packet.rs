@@ -201,6 +201,9 @@ pub(crate) fn register(_py: Python, m: &PyModule) -> PyResult<()> {
 #[cfg(test)]
 mod tests {
 
+    #[cfg(feature = "wasm")]
+    use wasm_bindgen_test::wasm_bindgen_test;
+
     use super::*;
     use hex;
 
@@ -211,6 +214,7 @@ mod tests {
     use crate::layers::tcp::TCP_BASE_HEADER_LENGTH;
     use crate::{ENCAP_TYPE_ETH, ENCAP_TYPE_LINUX_SLL};
 
+    #[cfg_attr(feature = "wasm", wasm_bindgen_test)]
     #[test]
     fn from_bytes_fail_too_short() {
         let _ = crate::layers::register_defaults();
@@ -220,6 +224,7 @@ mod tests {
         assert!(p.is_err(), "{:?}", p.ok());
     }
 
+    #[cfg_attr(feature = "wasm", wasm_bindgen_test)]
     #[test]
     fn from_bytes_success_eth_hdr_size() {
         let _ = crate::layers::register_defaults();
@@ -229,6 +234,7 @@ mod tests {
         assert!(p.is_ok(), "{:?}", p.err());
     }
 
+    #[cfg_attr(feature = "wasm", wasm_bindgen_test)]
     #[test]
     fn parse_valid_ipv4_packet() {
         let _ = layers::register_defaults();
@@ -253,6 +259,7 @@ mod tests {
         );
     }
 
+    #[cfg_attr(feature = "wasm", wasm_bindgen_test)]
     #[test]
     fn parse_valid_ipv6_packet() {
         let _ = layers::register_defaults();
@@ -277,6 +284,7 @@ mod tests {
         );
     }
 
+    #[cfg_attr(feature = "wasm", wasm_bindgen_test)]
     #[test]
     fn parse_valid_dns_packet() {
         use crate::layers;
@@ -309,6 +317,7 @@ mod tests {
         assert!(false, "{}", register_defaults);
     }
 
+    #[cfg_attr(feature = "wasm", wasm_bindgen_test)]
     #[test]
     fn parse_failing_packet() {
         use crate::layers;
@@ -319,6 +328,7 @@ mod tests {
         assert!(should_not_fail.is_ok(), "{:?}", should_not_fail.err());
     }
 
+    #[cfg_attr(feature = "wasm", wasm_bindgen_test)]
     #[test]
     fn parse_failing_packet_2() {
         use crate::layers;
@@ -329,6 +339,7 @@ mod tests {
         assert!(should_not_fail.is_ok(), "{:?}", should_not_fail.err());
     }
 
+    #[cfg_attr(feature = "wasm", wasm_bindgen_test)]
     #[test]
     fn parse_failing_packet_3() {
         use crate::layers;

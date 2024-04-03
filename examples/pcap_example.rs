@@ -1,5 +1,4 @@
 use clap::Parser;
-use pcap::{Capture, Device, Linktype};
 
 #[derive(Parser, Debug)]
 struct Opts {
@@ -12,7 +11,10 @@ struct Opts {
     num_packets: Option<u32>,
 }
 
+#[cfg(not(feature = "wasm"))]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    use pcap::{Capture, Device, Linktype};
+
     // Command Line Handling
     let opts = Opts::parse();
 
@@ -54,3 +56,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[cfg(feature = "wasm")]
+fn main() {}
