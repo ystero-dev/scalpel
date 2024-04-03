@@ -82,3 +82,22 @@ fn scalpel(py: Python, m: &PyModule) -> PyResult<()> {
     packet::register(py, m)?;
     Ok(())
 }
+
+#[cfg(all(not(feature = "python-bindings"), target_family = "wasm"))]
+use wasm_bindgen::prelude::*;
+
+#[cfg(all(not(feature = "python-bindings"), target_family = "wasm"))]
+#[wasm_bindgen]
+pub fn dissect_packet(packet: String) -> String {
+    let _ = layers::register_defaults();
+
+    let packet = hex::decode(packet);
+
+    let packet = packet.unwrap();
+
+    let p = Packet::from_bytes(&packet, ENCAP_TYPE_ETH);
+
+    let p = p.unwrap();
+
+    serde_json::to_string_pretty(&p).unwrap()
+}
