@@ -20,9 +20,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let res_string = result[0]
         .iter()
-        .fold(String::new(), |acc, num| format!("{}{:02x}", acc, num))
-        .trim_end()
-        .to_string();
+        .map(|num| format!("{:02x}", num))
+        .collect::<Vec<_>>()
+        .join("");
 
     println!("Packet Data: {:#?}", res_string);
 
