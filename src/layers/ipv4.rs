@@ -255,6 +255,7 @@ impl IPv4 {
         Ok(((len as u8, data), i))
     }
 
+    #[cfg(feature = "sculpting")]
     fn calculate_checksum(_bytes: &[u8]) -> u16 {
         0
     }
@@ -322,6 +323,7 @@ impl Layer for IPv4 {
         "ip"
     }
 
+    #[cfg(feature = "sculpting")]
     fn stack_and_encode(
         &mut self,
         next_layer: Option<&[u8]>,

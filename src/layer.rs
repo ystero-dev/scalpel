@@ -30,6 +30,7 @@ pub trait Layer: Send + Debug + erased_serde::Serialize {
         bytes: &[u8],
     ) -> Result<(Option<Box<dyn Layer + Send>>, usize), Error>;
 
+    #[cfg(feature = "sculpting")]
     /// Main 'encoder' function.
     ///
     /// The return value is a `Vec<u8>` on success. This indicates the encoded packet of the

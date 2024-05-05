@@ -4,7 +4,7 @@ use core::convert::TryInto;
 
 // FIXME: Should work with no_std
 use std::collections::HashMap;
-use std::sync::{RwLock,OnceLock};
+use std::sync::{OnceLock, RwLock};
 
 use serde::Serialize;
 
@@ -19,7 +19,8 @@ pub fn get_ethertypes_map() -> &'static RwLock<HashMap<EtherType, LayerCreatorFn
     ///
     /// The creator function simply creates a `default` L3 struct that implements the dissector
     /// for the Layer.
-    pub(crate) static ETHERTYPES_MAP: OnceLock<RwLock<HashMap<EtherType, LayerCreatorFn>>> = OnceLock::new();
+    pub(crate) static ETHERTYPES_MAP: OnceLock<RwLock<HashMap<EtherType, LayerCreatorFn>>> =
+        OnceLock::new();
     ETHERTYPES_MAP.get_or_init(|| RwLock::new(HashMap::new()))
 }
 
@@ -91,6 +92,7 @@ impl Layer for Ethernet {
         }
     }
 
+    #[cfg(feature = "sculpting")]
     fn stack_and_encode(
         &mut self,
         next_layer: Option<&[u8]>,
