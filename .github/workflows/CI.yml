@@ -34,12 +34,14 @@ jobs:
     - name: install maturin
       run: |
         python -m pip install maturin==0.13.6
+
     - name: install rustup
       run: |
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup-init.sh
         sh rustup-init.sh -y --default-toolchain none
         rustup target add ${{ matrix.target }}
         rustup default ${{ matrix.cfg_release_channel }}
+
     - name: Build with Python Bindings
       run: |
         maturin build --verbose --features python-bindings,logging --release --out dist
@@ -62,3 +64,6 @@ jobs:
 
     - name: Run wasm-pack tests in node
       run: wasm-pack test --node --features wasm
+
+    - name: Build and test with sculpting feature enabled
+      run: cargo build --features sculpting && cargo test --features sculpting

@@ -33,6 +33,8 @@
 //!              feature is enabled.
 //! - `wasm`: Build WASM capability in the scalpel. Currently `dissect_packet` API is provided,
 //!           dissects the packet and a JSON is generated for the packet.
+//! - `sculpting`: Experimental, allows one to generate packet from layers using metadata. For
+//!                example this will be useful to develop packet generators.
 //!
 //! Note: `wasm` and `python-bindings` features cannot be enabled at the same time.
 

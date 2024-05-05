@@ -74,5 +74,6 @@ walkdir = "2"
 [features]
 python-bindings = ['pyo3']
 logging = ["log"]
+sculpting = []
 
 wasm = ['wasm-bindgen']

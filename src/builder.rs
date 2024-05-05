@@ -1,3 +1,5 @@
+#![cfg(feature = "sculpting")]
+
 use crate::{errors::Error, Layer, Packet};
 
 #[derive(Debug, Default)]

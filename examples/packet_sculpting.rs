@@ -1,7 +1,9 @@
+#![allow(unused)]
 use std::error::Error;
 
 use scalpel::{layers, ENCAP_TYPE_ETH};
 
+#[cfg(feature = "sculpting")]
 fn main() -> Result<(), Box<dyn Error>> {
     let _ = scalpel::register_defaults()?;
 
@@ -18,16 +20,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let res_string = result[0]
         .iter()
-        .fold(String::new(), |acc, num| {
-            acc + "0x" + &num.to_string() + " "
-        })
+        .fold(String::new(), |acc, num| format!("{}{:02x}", acc, num))
         .trim_end()
         .to_string();
 
-    println!("res: {:#?}", res_string);
+    println!("Packet Data: {:#?}", res_string);
 
     let p = scalpel::Packet::from_bytes(&result[0], ENCAP_TYPE_ETH);
     println!("{}", serde_json::to_string_pretty(&p.unwrap()).unwrap());
 
     Ok(())
+}
+
+#[cfg(not(feature = "sculpting"))]
+fn main() {
+    eprintln!("Feature 'sculpting' is required for this example!.");
 }
