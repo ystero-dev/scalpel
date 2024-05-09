@@ -79,6 +79,23 @@ pub use types::{ENCAP_TYPE_ETH, ENCAP_TYPE_LINUX_SLL, ENCAP_TYPE_LINUX_SLL2};
 #[cfg(all(feature = "python-bindings", not(target_family = "wasm")))]
 use pyo3::prelude::*;
 
+use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen]
+pub fn dissect_packet(packet: String) -> String {
+    let _ = layers::register_defaults();
+
+    let packet = hex::decode(packet);
+    
+    let packet = packet.unwrap();
+
+    let p = Packet::from_bytes(&packet, ENCAP_TYPE_ETH);
+    
+    let p = p.unwrap();
+
+    serde_json::to_string_pretty(&p).unwrap()
+}
+
 /// Python bindings for packet dissection and sculpting in Rust (scalpel)
 #[cfg(all(feature = "python-bindings", not(target_family = "wasm")))]
 #[pymodule]
