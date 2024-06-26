@@ -43,11 +43,12 @@ compile_error!(
     "feature \"python-bindings\" and feature \"wasm\" cannot be enabled at the same time"
 );
 
-#[cfg(all(target_arch = "wasm32", not(feature = "wasm")))]
+#[cfg(all(target_family = "wasm", not(feature = "wasm")))]
 compile_error!("feature \"wasm\" is required for \"wasm32\" targets.");
 
-#[cfg(all(not(target_arch = "wasm32"), feature = "wasm"))]
+/* #[cfg(all(not(target_family = "wasm"), feature = "wasm"))]
 compile_error!("feature \"wasm\" is only supported for \"wasm32\" targets.");
+*/
 
 #[cfg(all(target_family = "wasm", feature = "python-bindings"))]
 compile_error!("feature \"python-bindings\" is not supported for \"wasm32\" targets.");
@@ -76,21 +77,21 @@ pub use packet::Packet;
 #[doc(inline)]
 pub use types::{ENCAP_TYPE_ETH, ENCAP_TYPE_LINUX_SLL, ENCAP_TYPE_LINUX_SLL2};
 
-#[cfg(all(feature = "python-bindings", not(target_family = "wasm")))]
+#[cfg(feature = "python-bindings")]
 use pyo3::prelude::*;
 
 /// Python bindings for packet dissection and sculpting in Rust (scalpel)
-#[cfg(all(feature = "python-bindings", not(target_family = "wasm")))]
+#[cfg(feature = "python-bindings")]
 #[pymodule]
 fn scalpel(py: Python, m: &PyModule) -> PyResult<()> {
     packet::register(py, m)?;
     Ok(())
 }
 
-#[cfg(all(not(feature = "python-bindings"), target_family = "wasm"))]
+#[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::*;
 
-#[cfg(all(not(feature = "python-bindings"), target_family = "wasm"))]
+#[cfg(feature = "wasm")]
 #[wasm_bindgen]
 pub fn dissect_packet(packet: String) -> String {
     let _ = layers::register_defaults();
