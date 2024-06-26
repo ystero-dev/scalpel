@@ -12,9 +12,6 @@ use crate::errors::Error;
 use crate::types::{EncapType, LayerCreatorFn};
 use crate::Layer;
 
-#[cfg(feature = "python-bindings")]
-use pyo3::prelude::*;
-
 fn get_encap_types_map() -> &'static RwLock<HashMap<EncapType, LayerCreatorFn>> {
     static ENCAP_TYPES_MAP: OnceLock<RwLock<HashMap<EncapType, LayerCreatorFn>>> = OnceLock::new();
     ENCAP_TYPES_MAP.get_or_init(|| RwLock::new(HashMap::new()))
@@ -176,33 +173,36 @@ impl Packet {
 }
 
 // Python Bindings
-#[allow(clippy::borrow_deref_ref)]
-#[cfg(feature = "python-bindings")]
-#[pymethods]
-impl Packet {
-    #[staticmethod]
-    fn from_bytes_py(bytes: &[u8], encap: EncapType) -> PyResult<Self> {
-        let _ = crate::layers::register_defaults();
+cfg_python! {
+    use pyo3::prelude::*;
 
-        Self::from_bytes(bytes, encap).map_err(|e| e.into())
+    #[allow(clippy::borrow_deref_ref)]
+    #[pymethods]
+    impl Packet {
+        #[staticmethod]
+        fn from_bytes_py(bytes: &[u8], encap: EncapType) -> PyResult<Self> {
+            let _ = crate::layers::register_defaults();
+
+            Self::from_bytes(bytes, encap).map_err(|e| e.into())
+        }
+
+        fn as_json(&self) -> PyResult<String> {
+            Ok(serde_json::to_string_pretty(self).unwrap())
+        }
     }
 
-    fn as_json(&self) -> PyResult<String> {
-        Ok(serde_json::to_string_pretty(self).unwrap())
+    pub(crate) fn register(_py: Python, m: &PyModule) -> PyResult<()> {
+        m.add_class::<Packet>()?;
+        Ok(())
     }
-}
-
-#[cfg(feature = "python-bindings")]
-pub(crate) fn register(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_class::<Packet>()?;
-    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
 
-    #[cfg(feature = "wasm")]
-    use wasm_bindgen_test::wasm_bindgen_test;
+    cfg_wasm! {
+        use wasm_bindgen_test::wasm_bindgen_test;
+    }
 
     use super::*;
     use hex;
