@@ -53,6 +53,9 @@ compile_error!("feature \"wasm\" is only supported for \"wasm32\" targets.");
 #[cfg(all(target_family = "wasm", feature = "python-bindings"))]
 compile_error!("feature \"python-bindings\" is not supported for \"wasm32\" targets.");
 
+#[macro_use]
+pub mod cfg_macros;
+
 pub mod layers;
 
 pub mod errors;
@@ -77,32 +80,32 @@ pub use packet::Packet;
 #[doc(inline)]
 pub use types::{ENCAP_TYPE_ETH, ENCAP_TYPE_LINUX_SLL, ENCAP_TYPE_LINUX_SLL2};
 
-#[cfg(feature = "python-bindings")]
-use pyo3::prelude::*;
+cfg_python! {
+    use pyo3::prelude::*;
 
-/// Python bindings for packet dissection and sculpting in Rust (scalpel)
-#[cfg(feature = "python-bindings")]
-#[pymodule]
-fn scalpel(py: Python, m: &PyModule) -> PyResult<()> {
-    packet::register(py, m)?;
-    Ok(())
+    /// Python bindings for packet dissection and sculpting in Rust (scalpel)
+    #[pymodule]
+    fn scalpel(py: Python, m: &PyModule) -> PyResult<()> {
+        packet::register(py, m)?;
+        Ok(())
+    }
 }
 
-#[cfg(feature = "wasm")]
-use wasm_bindgen::prelude::*;
+cfg_wasm! {
+    use wasm_bindgen::prelude::*;
 
-#[cfg(feature = "wasm")]
-#[wasm_bindgen]
-pub fn dissect_packet(packet: String) -> String {
-    let _ = layers::register_defaults();
+    #[wasm_bindgen]
+    pub fn dissect_packet(packet: String) -> String {
+        let _ = layers::register_defaults();
 
-    let packet = hex::decode(packet);
+        let packet = hex::decode(packet);
 
-    let packet = packet.unwrap();
+        let packet = packet.unwrap();
 
-    let p = Packet::from_bytes(&packet, ENCAP_TYPE_ETH);
+        let p = Packet::from_bytes(&packet, ENCAP_TYPE_ETH);
 
-    let p = p.unwrap();
+        let p = p.unwrap();
 
-    serde_json::to_string_pretty(&p).unwrap()
+        serde_json::to_string_pretty(&p).unwrap()
+    }
 }
