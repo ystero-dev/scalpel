@@ -87,29 +87,31 @@ mod tests {
     use crate::errors::Error as CrateError;
     use core::convert::TryInto;
 
-    #[test]
-    fn byte_array_too_small_fail() {
-        let mac_address: Result<MACAddress, _> = [00u8, 01u8, 02u8][..].try_into();
-        assert!(mac_address.is_err());
-        assert!(
-            mac_address.err().unwrap() == CrateError::ParseError("MacAddress: 000102".to_string())
-        );
-    }
+    wasm_tests! {
+        #[test]
+        fn byte_array_too_small_fail() {
+            let mac_address: Result<MACAddress, _> = [00u8, 01u8, 02u8][..].try_into();
+            assert!(mac_address.is_err());
+            assert!(
+                mac_address.err().unwrap() == CrateError::ParseError("MacAddress: 000102".to_string())
+            );
+        }
 
-    #[test]
-    fn byte_array_too_large_fail() {
-        let mac_address: Result<MACAddress, _> = [00u8; 10].as_ref().try_into();
-        assert!(mac_address.is_err());
-        assert!(
-            mac_address.err().unwrap()
-                == CrateError::ParseError("MacAddress: 00000000000000000000".to_string())
-        );
-    }
+        #[test]
+        fn byte_array_too_large_fail() {
+            let mac_address: Result<MACAddress, _> = [00u8; 10].as_ref().try_into();
+            assert!(mac_address.is_err());
+            assert!(
+                mac_address.err().unwrap()
+                    == CrateError::ParseError("MacAddress: 00000000000000000000".to_string())
+            );
+        }
 
-    #[test]
-    fn str_always_fail() {
-        let mac_address: Result<MACAddress, _> = "".try_into();
-        assert!(mac_address.is_err());
-        assert!(mac_address.err().unwrap() == CrateError::ParseError("MacAddress: ".to_string()));
+        #[test]
+        fn str_always_fail() {
+            let mac_address: Result<MACAddress, _> = "".try_into();
+            assert!(mac_address.is_err());
+            assert!(mac_address.err().unwrap() == CrateError::ParseError("MacAddress: ".to_string()));
+        }
     }
 }

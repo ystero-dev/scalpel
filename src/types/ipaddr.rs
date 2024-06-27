@@ -259,59 +259,61 @@ mod tests {
     use super::*;
     use std::net::Ipv6Addr;
 
-    #[test]
-    fn ipv6_addr_tests() {
-        struct IPv6AddressTestCase<'s> {
-            input: &'s str,
-            valid: bool,
-        }
+    wasm_tests! {
+        #[test]
+        fn ipv6_addr_tests() {
+            struct IPv6AddressTestCase<'s> {
+                input: &'s str,
+                valid: bool,
+            }
 
-        let test_cases = vec![
-            IPv6AddressTestCase {
-                input: "fe80::1",
-                valid: true,
-            },
-            IPv6AddressTestCase {
-                input: "::",
-                valid: true,
-            },
-            IPv6AddressTestCase {
-                input: "::1",
-                valid: true,
-            },
-            IPv6AddressTestCase {
-                input: "::ffff:0:0",
-                valid: true,
-            },
-            IPv6AddressTestCase {
-                input: "::ffff:ff:ff",
-                valid: true,
-            },
-            IPv6AddressTestCase {
-                input: "64:ff9b::",
-                valid: true,
-            },
-            IPv6AddressTestCase {
-                input: "2a03:2880:f12f:183:face:b00c:0:25de",
-                valid: true,
-            },
-            IPv6AddressTestCase {
-                input: "1:0:1:0:1:0:1:0",
-                valid: true,
-            },
-            IPv6AddressTestCase {
-                input: "2404:6800:4003:c04::1b",
-                valid: true,
-            },
-        ];
+            let test_cases = vec![
+                IPv6AddressTestCase {
+                    input: "fe80::1",
+                    valid: true,
+                },
+                IPv6AddressTestCase {
+                    input: "::",
+                    valid: true,
+                },
+                IPv6AddressTestCase {
+                    input: "::1",
+                    valid: true,
+                },
+                IPv6AddressTestCase {
+                    input: "::ffff:0:0",
+                    valid: true,
+                },
+                IPv6AddressTestCase {
+                    input: "::ffff:ff:ff",
+                    valid: true,
+                },
+                IPv6AddressTestCase {
+                    input: "64:ff9b::",
+                    valid: true,
+                },
+                IPv6AddressTestCase {
+                    input: "2a03:2880:f12f:183:face:b00c:0:25de",
+                    valid: true,
+                },
+                IPv6AddressTestCase {
+                    input: "1:0:1:0:1:0:1:0",
+                    valid: true,
+                },
+                IPv6AddressTestCase {
+                    input: "2404:6800:4003:c04::1b",
+                    valid: true,
+                },
+            ];
 
-        for test_case in test_cases {
-            let ipv6: Result<IPv6Address, _> =
-                test_case.input.parse::<Ipv6Addr>().unwrap().segments()[..].try_into();
-            assert!(ipv6.is_ok(), "{}", test_case.valid);
-            if test_case.valid {
-                let ipv6 = ipv6.unwrap();
-                assert_eq!(test_case.input, format!("{}", ipv6));
+            for test_case in test_cases {
+                let ipv6: Result<IPv6Address, _> =
+                    test_case.input.parse::<Ipv6Addr>().unwrap().segments()[..].try_into();
+                assert!(ipv6.is_ok(), "{}", test_case.valid);
+                if test_case.valid {
+                    let ipv6 = ipv6.unwrap();
+                    assert_eq!(test_case.input, format!("{}", ipv6));
+                }
             }
         }
     }

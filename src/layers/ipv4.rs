@@ -379,63 +379,65 @@ mod tests {
         assert_eq!(ipv4.options.as_slice(), options);
     }
 
-    #[test]
-    fn parse_ipv4_option_packet_1() {
-        let ipv4_packet = hex::decode("08003715e6bc00123f4a33d208004600004caa1d0000801111caac1f1336ac1f1349010101003e3000a10034fa4e302a02010004067075626c6963a01d02012a02010002010030123010060c2b060102012b0e01010601050500").unwrap();
-        let options = [
-            super::IPOption::NOP,
-            super::IPOption::NOP,
-            super::IPOption::NOP,
-            super::IPOption::EOOL,
-        ];
+    wasm_tests! {
+        #[test]
+        fn parse_ipv4_option_packet_1() {
+            let ipv4_packet = hex::decode("08003715e6bc00123f4a33d208004600004caa1d0000801111caac1f1336ac1f1349010101003e3000a10034fa4e302a02010004067075626c6963a01d02012a02010002010030123010060c2b060102012b0e01010601050500").unwrap();
+            let options = [
+                super::IPOption::NOP,
+                super::IPOption::NOP,
+                super::IPOption::NOP,
+                super::IPOption::EOOL,
+            ];
 
-        test_options(&ipv4_packet[14..], &options);
-    }
+            test_options(&ipv4_packet[14..], &options);
+        }
 
-    #[test]
-    fn parse_ipv4_option_packet_2() {
-        let ipv4_packet = hex::decode("08003715e6bc00123f4a33d208004600004caa1d0000801111caac1f1336ac1f13495f03ff003e3000a10034fa4e302a02010004067075626c6963a01d02012a02010002010030123010060c2b060102012b0e01010601050500").unwrap();
-        let options = [
-            super::IPOption::Other {
-                value: 0x5f,
-                len: 3,
-                data: vec![0xff],
-            },
-            super::IPOption::EOOL,
-        ];
+        #[test]
+        fn parse_ipv4_option_packet_2() {
+            let ipv4_packet = hex::decode("08003715e6bc00123f4a33d208004600004caa1d0000801111caac1f1336ac1f13495f03ff003e3000a10034fa4e302a02010004067075626c6963a01d02012a02010002010030123010060c2b060102012b0e01010601050500").unwrap();
+            let options = [
+                super::IPOption::Other {
+                    value: 0x5f,
+                    len: 3,
+                    data: vec![0xff],
+                },
+                super::IPOption::EOOL,
+            ];
 
-        test_options(&ipv4_packet[14..], &options);
-    }
+            test_options(&ipv4_packet[14..], &options);
+        }
 
-    #[test]
-    fn parse_ipv4_option_packet_3() {
-        let ipv4_packet = hex::decode("08003715e6bc00123f4a33d2080047000050aa1d0000801111caac1f1336ac1f1349070707deadbeef003e3000a10034fa4e302a02010004067075626c6963a01d02012a02010002010030123010060c2b060102012b0e01010601050500").unwrap();
-        let options = [
-            super::IPOption::RR {
-                len: 7,
-                ptr: 7,
-                route: vec![[0xde, 0xad, 0xbe, 0xef].into()],
-            },
-            super::IPOption::EOOL,
-        ];
+        #[test]
+        fn parse_ipv4_option_packet_3() {
+            let ipv4_packet = hex::decode("08003715e6bc00123f4a33d2080047000050aa1d0000801111caac1f1336ac1f1349070707deadbeef003e3000a10034fa4e302a02010004067075626c6963a01d02012a02010002010030123010060c2b060102012b0e01010601050500").unwrap();
+            let options = [
+                super::IPOption::RR {
+                    len: 7,
+                    ptr: 7,
+                    route: vec![[0xde, 0xad, 0xbe, 0xef].into()],
+                },
+                super::IPOption::EOOL,
+            ];
 
-        test_options(&ipv4_packet[14..], &options);
-    }
+            test_options(&ipv4_packet[14..], &options);
+        }
 
-    #[test]
-    fn parse_ipv4_option_packet_4() {
-        let ipv4_packet = hex::decode("08003715e6bc00123f4a33d2080047000050aa1d0000801111caac1f1336ac1f13490b04dead0c04beef3e3000a10034fa4e302a02010004067075626c6963a01d02012a02010002010030123010060c2b060102012b0e01010601050500").unwrap();
-        let options = [
-            super::IPOption::MTUP {
-                len: 4,
-                value: 57005,
-            },
-            super::IPOption::MTUR {
-                len: 4,
-                value: 48879,
-            },
-        ];
+        #[test]
+        fn parse_ipv4_option_packet_4() {
+            let ipv4_packet = hex::decode("08003715e6bc00123f4a33d2080047000050aa1d0000801111caac1f1336ac1f13490b04dead0c04beef3e3000a10034fa4e302a02010004067075626c6963a01d02012a02010002010030123010060c2b060102012b0e01010601050500").unwrap();
+            let options = [
+                super::IPOption::MTUP {
+                    len: 4,
+                    value: 57005,
+                },
+                super::IPOption::MTUR {
+                    len: 4,
+                    value: 48879,
+                },
+            ];
 
-        test_options(&ipv4_packet[14..], &options);
+            test_options(&ipv4_packet[14..], &options);
+        }
     }
 }
