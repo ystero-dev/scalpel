@@ -78,21 +78,23 @@ impl Layer for ARP {
 #[cfg(test)]
 mod tests {
 
-    #[test]
-    fn parse_arp_simple() {
-        use crate::layers;
-        use crate::{Packet, ENCAP_TYPE_ETH};
+    wasm_tests! {
+        #[test]
+        fn parse_arp_simple() {
+            use crate::layers;
+            use crate::{Packet, ENCAP_TYPE_ETH};
 
-        let _ = layers::register_defaults();
+            let _ = layers::register_defaults();
 
-        let array = hex::decode("c402326b0000c4013258000008060001080006040001c401325800000a000001c402326b00000a000002000000000000000000000000000000000000");
-        assert!(array.is_ok());
-        let array = array.unwrap();
+            let array = hex::decode("c402326b0000c4013258000008060001080006040001c401325800000a000001c402326b00000a000002000000000000000000000000000000000000");
+            assert!(array.is_ok());
+            let array = array.unwrap();
 
-        let p = Packet::from_bytes(&array, ENCAP_TYPE_ETH);
-        assert!(p.is_ok(), "{:?}", p.err());
+            let p = Packet::from_bytes(&array, ENCAP_TYPE_ETH);
+            assert!(p.is_ok(), "{:?}", p.err());
 
-        let p = p.unwrap();
-        assert!(p.layers.len() == 2, "{:?}", p);
+            let p = p.unwrap();
+            assert!(p.layers.len() == 2, "{:?}", p);
+        }
     }
 }

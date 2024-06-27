@@ -70,30 +70,32 @@ mod tests {
 
     use scalpel::layers;
 
-    #[test]
-    fn parse_valid_vxlan_packet() {
-        let _ = layers::register_defaults();
+    wasm_tests! {
+        #[test]
+        fn parse_valid_vxlan_packet() {
+            let _ = layers::register_defaults();
 
-        let vxlan_packet = hex::decode("00005e00531100005e005303080045000096002c4000fd1177250202020201010101504f12b500820000080000000013940000005e00536500005e00536608004500006400280000ff012155c0a80c66c0a80c6500005c27000c000000000000007c299babcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcd")
-                                        .unwrap();
+            let vxlan_packet = hex::decode("00005e00531100005e005303080045000096002c4000fd1177250202020201010101504f12b500820000080000000013940000005e00536500005e00536608004500006400280000ff012155c0a80c66c0a80c6500005c27000c000000000000007c299babcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcd")
+                                            .unwrap();
 
-        let p = scalpel::Packet::from_bytes(&vxlan_packet, scalpel::ENCAP_TYPE_ETH);
-        assert!(p.is_ok());
+            let p = scalpel::Packet::from_bytes(&vxlan_packet, scalpel::ENCAP_TYPE_ETH);
+            assert!(p.is_ok());
 
-        let p = p.unwrap();
+            let p = p.unwrap();
 
-        let layer_type_names = [
-            "Ethernet", "IPv4", "UDP", "VXLAN", "Ethernet",
-            "IPv4",
-            // TODO: Uncomment when ICMP gets supported
-            // "ICMP",
-        ];
-        p.layers
-            .iter()
-            .map(|layer| layer.name())
-            .zip(layer_type_names)
-            .for_each(|(layer_name, type_name)| {
-                assert_eq!(layer_name, type_name, "{}", layer_name);
-            });
+            let layer_type_names = [
+                "Ethernet", "IPv4", "UDP", "VXLAN", "Ethernet",
+                "IPv4",
+                // TODO: Uncomment when ICMP gets supported
+                // "ICMP",
+            ];
+            p.layers
+                .iter()
+                .map(|layer| layer.name())
+                .zip(layer_type_names)
+                .for_each(|(layer_name, type_name)| {
+                    assert_eq!(layer_name, type_name, "{}", layer_name);
+                });
+        }
     }
 }

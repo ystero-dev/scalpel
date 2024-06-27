@@ -2,7 +2,7 @@
 use core::convert::TryInto;
 
 use std::collections::HashMap;
-use std::sync::{RwLock,OnceLock};
+use std::sync::{OnceLock, RwLock};
 
 use serde::{ser::SerializeStruct as _, Serialize, Serializer};
 
@@ -16,32 +16,33 @@ const UNKNOWN_CHUNK_TYPE: &str = "Unknown Chunk";
 fn get_chunk_display_map() -> &'static HashMap<u8, &'static str> {
     static CHUNK_DISPLAY_MAP: OnceLock<HashMap<u8, &'static str>> = OnceLock::new();
     CHUNK_DISPLAY_MAP.get_or_init(|| {
-    // A Map of Chunk Type to Display String
-    let mut m = HashMap::new();
-    m.insert(0, "DATA Chunk");
-    m.insert(1, "INIT Chunk");
-    m.insert(2, "INIT-ACK Chunk");
-    m.insert(3, "SACK Chunk");
-    m.insert(4, "HEARTBEAT Chunk");
-    m.insert(5, "HEARTBEAT-ACK Chunk");
-    m.insert(6, "ABORT Chunk");
-    m.insert(7, "SHUTDOWN Chunk");
-    m.insert(8, "SHUTDOWN-ACK Chunk");
-    m.insert(9, "ERROR Chunk");
-    m.insert(10, "COOKIE-ECHO Chunk");
-    m.insert(11, "COOKIE-ACK Chunk");
-    m.insert(12, "ECNE Chunk");
-    m.insert(13, "CWR Chunk");
-    m.insert(14, "SHUTDOWN_COMPLETE Chunk");
-    m.insert(15, "AUTH Chunk");
-    m.insert(64, "I-DATA Chunk");
-    m.insert(128, "ASCONF-ACK Chunk");
-    m.insert(130, "RE-CONFIG Chunk");
-    m.insert(132, "PAD Chunk");
-    m.insert(192, "FORWARD-TSN Chunk");
-    m.insert(193, "ASCONF Chunk");
-    m.insert(195, "I-FORWARD-TSN Chunk");
-    m})
+        // A Map of Chunk Type to Display String
+        let mut m = HashMap::new();
+        m.insert(0, "DATA Chunk");
+        m.insert(1, "INIT Chunk");
+        m.insert(2, "INIT-ACK Chunk");
+        m.insert(3, "SACK Chunk");
+        m.insert(4, "HEARTBEAT Chunk");
+        m.insert(5, "HEARTBEAT-ACK Chunk");
+        m.insert(6, "ABORT Chunk");
+        m.insert(7, "SHUTDOWN Chunk");
+        m.insert(8, "SHUTDOWN-ACK Chunk");
+        m.insert(9, "ERROR Chunk");
+        m.insert(10, "COOKIE-ECHO Chunk");
+        m.insert(11, "COOKIE-ACK Chunk");
+        m.insert(12, "ECNE Chunk");
+        m.insert(13, "CWR Chunk");
+        m.insert(14, "SHUTDOWN_COMPLETE Chunk");
+        m.insert(15, "AUTH Chunk");
+        m.insert(64, "I-DATA Chunk");
+        m.insert(128, "ASCONF-ACK Chunk");
+        m.insert(130, "RE-CONFIG Chunk");
+        m.insert(132, "PAD Chunk");
+        m.insert(192, "FORWARD-TSN Chunk");
+        m.insert(193, "ASCONF Chunk");
+        m.insert(195, "I-FORWARD-TSN Chunk");
+        m
+    })
 }
 
 fn get_sctp_protocols_map() -> &'static RwLock<HashMap<u32, LayerCreatorFn>> {
@@ -312,18 +313,20 @@ mod tests {
     use crate::layers;
     use crate::{Packet, ENCAP_TYPE_ETH};
 
-    #[test]
-    fn test_basic_sctp_decode() {
-        let _ = layers::register_defaults();
-        let array = hex::decode(
-"00005096523a0026cb39f4c00800450000a8da490000fa844bf6585206860aad300d189f0b5add68d33d0f7373ab030000100629beaa0000fa000000000000030028d42b4897000000050000000301000202000000180012000800000a43000600080000045600030028d42b4898000000060000000301000202000000180012000800000a42000600080000045600030028d42b4899000000070000000301000202000000180012000800000fa20006000800000456");
-        assert!(array.is_ok());
+    wasm_tests! {
+        #[test]
+        fn test_basic_sctp_decode() {
+            let _ = layers::register_defaults();
+            let array = hex::decode(
+    "00005096523a0026cb39f4c00800450000a8da490000fa844bf6585206860aad300d189f0b5add68d33d0f7373ab030000100629beaa0000fa000000000000030028d42b4897000000050000000301000202000000180012000800000a43000600080000045600030028d42b4898000000060000000301000202000000180012000800000a42000600080000045600030028d42b4899000000070000000301000202000000180012000800000fa20006000800000456");
+            assert!(array.is_ok());
 
-        let array = array.unwrap();
-        let p = Packet::from_bytes(&array, ENCAP_TYPE_ETH);
-        assert!(p.is_ok(), "{:?}", p.err());
+            let array = array.unwrap();
+            let p = Packet::from_bytes(&array, ENCAP_TYPE_ETH);
+            assert!(p.is_ok(), "{:?}", p.err());
 
-        let p = p.unwrap();
-        assert!(p.layers.len() == 3, "{:#?}", p);
+            let p = p.unwrap();
+            assert!(p.layers.len() == 3, "{:#?}", p);
+        }
     }
 }
