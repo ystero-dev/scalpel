@@ -17,3 +17,15 @@ macro_rules! cfg_wasm {
         )*
     }
 }
+
+macro_rules! wasm_tests {
+
+    ( $( #[test] $($item:item)?)*) => {
+        $(
+            #[cfg_attr(target_family = "wasm", wasm_bindgen_test::wasm_bindgen_test)]
+            #[test]
+            $($item)?
+        )*
+    };
+
+}
