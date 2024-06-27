@@ -200,10 +200,6 @@ cfg_python! {
 #[cfg(test)]
 mod tests {
 
-    cfg_wasm! {
-        use wasm_bindgen_test::wasm_bindgen_test;
-    }
-
     use super::*;
     use hex;
 
@@ -214,100 +210,128 @@ mod tests {
     use crate::layers::tcp::TCP_BASE_HEADER_LENGTH;
     use crate::{ENCAP_TYPE_ETH, ENCAP_TYPE_LINUX_SLL};
 
-    #[cfg_attr(feature = "wasm", wasm_bindgen_test)]
-    #[test]
-    fn from_bytes_fail_too_short() {
-        let _ = crate::layers::register_defaults();
+    wasm_tests! {
+        #[test]
+        fn from_bytes_fail_too_short() {
+            let _ = crate::layers::register_defaults();
 
-        let p = Packet::from_bytes("".as_bytes(), ENCAP_TYPE_ETH);
+            let p = Packet::from_bytes("".as_bytes(), ENCAP_TYPE_ETH);
 
-        assert!(p.is_err(), "{:?}", p.ok());
-    }
+            assert!(p.is_err(), "{:?}", p.ok());
+        }
 
-    #[cfg_attr(feature = "wasm", wasm_bindgen_test)]
-    #[test]
-    fn from_bytes_success_eth_hdr_size() {
-        let _ = crate::layers::register_defaults();
 
-        let p = Packet::from_bytes(&[0; 14], ENCAP_TYPE_ETH);
+        #[test]
+        fn from_bytes_success_eth_hdr_size() {
+            let _ = crate::layers::register_defaults();
 
-        assert!(p.is_ok(), "{:?}", p.err());
-    }
+            let p = Packet::from_bytes(&[0; 14], ENCAP_TYPE_ETH);
 
-    #[cfg_attr(feature = "wasm", wasm_bindgen_test)]
-    #[test]
-    fn parse_valid_ipv4_packet() {
-        let _ = layers::register_defaults();
+            assert!(p.is_ok(), "{:?}", p.err());
+        }
 
-        let array = hex::decode("00e08100b02800096b88f5c90800450000c1d24940008006c85b0a000005cf2e865e0cc30050a80076877de014025018faf0ad62000048454144202f76342f69756964656e742e6361623f3033303730313132303820485454502f312e310d0a4163636570743a202a2f2a0d0a557365722d4167656e743a20496e6475737472792055706461746520436f6e74726f6c0d0a486f73743a2077696e646f77737570646174652e6d6963726f736f66742e636f6d0d0a436f6e6e656374696f6e3a204b6565702d416c6976650d0a0d0a");
-        assert!(array.is_ok());
+        #[test]
+        fn parse_valid_ipv4_packet() {
+            let _ = layers::register_defaults();
 
-        let array = array.unwrap();
-        let len = array.len();
-        let p = Packet::from_bytes(&array, ENCAP_TYPE_ETH);
-        assert!(p.is_ok(), "{:?}", p.err());
+            let array = hex::decode("00e08100b02800096b88f5c90800450000c1d24940008006c85b0a000005cf2e865e0cc30050a80076877de014025018faf0ad62000048454144202f76342f69756964656e742e6361623f3033303730313132303820485454502f312e310d0a4163636570743a202a2f2a0d0a557365722d4167656e743a20496e6475737472792055706461746520436f6e74726f6c0d0a486f73743a2077696e646f77737570646174652e6d6963726f736f66742e636f6d0d0a436f6e6e656374696f6e3a204b6565702d416c6976650d0a0d0a");
+            assert!(array.is_ok());
 
-        let p = p.unwrap();
-        assert!(p.layers.len() == 3, "{:?}", p);
-        assert!(
-            p.unprocessed.len()
-                == (len - (ETH_HEADER_LENGTH + IPV4_BASE_HEADER_LENGTH + TCP_BASE_HEADER_LENGTH)),
-            "{}:{}:{:#?}",
-            len,
-            p.unprocessed.len(),
-            p
-        );
-    }
+            let array = array.unwrap();
+            let len = array.len();
+            let p = Packet::from_bytes(&array, ENCAP_TYPE_ETH);
+            assert!(p.is_ok(), "{:?}", p.err());
 
-    #[cfg_attr(feature = "wasm", wasm_bindgen_test)]
-    #[test]
-    fn parse_valid_ipv6_packet() {
-        let _ = layers::register_defaults();
+            let p = p.unwrap();
+            assert!(p.layers.len() == 3, "{:?}", p);
+            assert!(
+                p.unprocessed.len()
+                    == (len - (ETH_HEADER_LENGTH + IPV4_BASE_HEADER_LENGTH + TCP_BASE_HEADER_LENGTH)),
+                "{}:{}:{:#?}",
+                len,
+                p.unprocessed.len(),
+                p
+            );
+        }
 
-        let array = hex::decode("000573a007d168a3c4f949f686dd600000000020064020010470e5bfdead49572174e82c48872607f8b0400c0c03000000000000001af9c7001903a088300000000080022000da4700000204058c0103030801010402");
-        assert!(array.is_ok());
+        #[test]
+        fn parse_valid_ipv6_packet() {
+            let _ = layers::register_defaults();
 
-        let array = array.unwrap();
-        let len = array.len();
-        let p = Packet::from_bytes(&array, ENCAP_TYPE_ETH);
-        assert!(p.is_ok(), "{:?}", p.err());
+            let array = hex::decode("000573a007d168a3c4f949f686dd600000000020064020010470e5bfdead49572174e82c48872607f8b0400c0c03000000000000001af9c7001903a088300000000080022000da4700000204058c0103030801010402");
+            assert!(array.is_ok());
 
-        let p = p.unwrap();
-        assert!(p.layers.len() == 3, "{:?}", p);
-        assert!(
-            p.unprocessed.len()
-                == (len - (ETH_HEADER_LENGTH + IPV6_BASE_HEADER_LENGTH + TCP_BASE_HEADER_LENGTH)),
-            "{}:{}:{:#?}",
-            len,
-            p.unprocessed.len(),
-            p
-        );
-    }
+            let array = array.unwrap();
+            let len = array.len();
+            let p = Packet::from_bytes(&array, ENCAP_TYPE_ETH);
+            assert!(p.is_ok(), "{:?}", p.err());
 
-    #[cfg_attr(feature = "wasm", wasm_bindgen_test)]
-    #[test]
-    fn parse_valid_dns_packet() {
-        use crate::layers;
+            let p = p.unwrap();
+            assert!(p.layers.len() == 3, "{:?}", p);
+            assert!(
+                p.unprocessed.len()
+                    == (len - (ETH_HEADER_LENGTH + IPV6_BASE_HEADER_LENGTH + TCP_BASE_HEADER_LENGTH)),
+                "{}:{}:{:#?}",
+                len,
+                p.unprocessed.len(),
+                p
+            );
+        }
 
-        let _ = layers::register_defaults();
+        #[test]
+        fn parse_valid_dns_packet() {
+            use crate::layers;
 
-        let dns_query = vec![
-            0xfe, 0x54, 0x00, 0x3e, 0x00, 0x96, 0x52, 0x54, /* .T.>..RT */
-            0x00, 0xbd, 0x1c, 0x70, 0x08, 0x00, 0x45, 0x00, /* ...p..E. */
-            0x00, 0x3c, 0x22, 0xe0, 0x00, 0x00, 0x40, 0x11, /* .<"...@. */
-            0xe2, 0x38, 0xc0, 0xa8, 0x7a, 0x46, 0xc0, 0xa8, /* .8..zF.. */
-            0x7a, 0x01, 0xc3, 0x35, 0x00, 0x35, 0x00, 0x28, /* z..5.5.( */
-            0x75, 0xd2, 0x52, 0x41, 0x01, 0x00, 0x00, 0x01, /* u.RA.... */
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x77, /* .......w */
-            0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, /* ww.googl */
-            0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, /* e.com... */
-            0x00, 0x01, /* .. */
-        ];
+            let _ = layers::register_defaults();
 
-        let p = Packet::from_bytes(&dns_query, ENCAP_TYPE_ETH);
-        assert!(p.is_ok(), "{:?}", p.err());
-        let p = p.unwrap();
-        assert!(p.layers.len() == 4, "{:?}", p);
+            let dns_query = vec![
+                0xfe, 0x54, 0x00, 0x3e, 0x00, 0x96, 0x52, 0x54, /* .T.>..RT */
+                0x00, 0xbd, 0x1c, 0x70, 0x08, 0x00, 0x45, 0x00, /* ...p..E. */
+                0x00, 0x3c, 0x22, 0xe0, 0x00, 0x00, 0x40, 0x11, /* .<"...@. */
+                0xe2, 0x38, 0xc0, 0xa8, 0x7a, 0x46, 0xc0, 0xa8, /* .8..zF.. */
+                0x7a, 0x01, 0xc3, 0x35, 0x00, 0x35, 0x00, 0x28, /* z..5.5.( */
+                0x75, 0xd2, 0x52, 0x41, 0x01, 0x00, 0x00, 0x01, /* u.RA.... */
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x77, /* .......w */
+                0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, /* ww.googl */
+                0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, /* e.com... */
+                0x00, 0x01, /* .. */
+            ];
+
+            let p = Packet::from_bytes(&dns_query, ENCAP_TYPE_ETH);
+            assert!(p.is_ok(), "{:?}", p.err());
+            let p = p.unwrap();
+            assert!(p.layers.len() == 4, "{:?}", p);
+        }
+
+        #[test]
+        fn parse_failing_packet() {
+            use crate::layers;
+            let _ = layers::register_defaults();
+            let should_not_fail = hex::decode("387a0ec884c6001a9adead05080045000130eed7000037118469ca58835bc0a801200035c8d1011c169cd65e81800001000100040007046368617406676f6f676c6503636f6d00001c0001c00c001c00010000012a0010240468004002081a000000000000200ec011000200010001f0f20006036e7334c011c011000200010001f0f20006036e7331c011c011000200010001f0f20006036e7332c011c011000200010001f0f20006036e7333c011c05b000100010001fe660004d8ef200ac06d000100010001f1ce0004d8ef220ac07f0001000100021aad0004d8ef240ac05b001c00010002c4e400102001486048020032000000000000000ac06d001c00010001f1ce00102001486048020034000000000000000ac07f001c000100050db900102001486048020036000000000000000a0000291000000000000000").unwrap();
+            let should_not_fail = Packet::from_bytes(&should_not_fail, ENCAP_TYPE_ETH);
+
+            assert!(should_not_fail.is_ok(), "{:?}", should_not_fail.err());
+        }
+
+        #[test]
+        fn parse_failing_packet_2() {
+            use crate::layers;
+            let _ = layers::register_defaults();
+            let should_not_fail = hex::decode("387a0ec884c6001a9adead05080045000163902e00003d11b84c7448fdfec0a8012000359cca014f1eabbbd3818000010001000400090373736c076773746174696303636f6d00001c0001c00c001c0001000000fc001024046800400908130000000000002003c0100002000100016de4000d036e733406676f6f676c65c018c0100002000100016de40006036e7331c04dc0100002000100016de40006036e7332c04dc0100002000100016de40006036e7333c04dc0620001000100016df50004d8ef200ac0740001000100016df50004d8ef220ac0860001000100016df50004d8ef240ac0490001000100016df50004d8ef260ac062001c000100016df500102001486048020032000000000000000ac074001c000100016df500102001486048020034000000000000000ac086001c000100016df500102001486048020036000000000000000ac049001c000100016df500102001486048020038000000000000000a0000291000000000000000").unwrap();
+            let should_not_fail = Packet::from_bytes(&should_not_fail, ENCAP_TYPE_ETH);
+
+            assert!(should_not_fail.is_ok(), "{:?}", should_not_fail.err());
+        }
+
+        #[test]
+        fn parse_failing_packet_3() {
+            use crate::layers;
+            let _ = layers::register_defaults();
+            let should_not_fail = hex::decode("00000304000600000000000000000800450000c01b0b400001115fec7f0000357f0000010035dd3600acfef3c8218180000100020004000108697076346f6e6c7904617270610000010001c00c00010001000017210004c00000aac00c00010001000017210004c00000abc00c0002000100001721001401620c69616e612d73657276657273036e657400c00c000200010000172100040161c04dc00c000200010000172100040163c04dc00c0002000100001721000e026e73056963616e6e036f726700000029ffd6000000000000").unwrap();
+            let should_not_fail = Packet::from_bytes(&should_not_fail, ENCAP_TYPE_LINUX_SLL);
+
+            assert!(should_not_fail.is_ok(), "{:?}", should_not_fail.err());
+        }
     }
 
     #[ignore]
@@ -315,38 +339,5 @@ mod tests {
     fn always_fail_ignore() {
         let register_defaults = include_str!(concat!(env!("OUT_DIR"), "/register_defaults.rs"));
         assert!(false, "{}", register_defaults);
-    }
-
-    #[cfg_attr(feature = "wasm", wasm_bindgen_test)]
-    #[test]
-    fn parse_failing_packet() {
-        use crate::layers;
-        let _ = layers::register_defaults();
-        let should_not_fail = hex::decode("387a0ec884c6001a9adead05080045000130eed7000037118469ca58835bc0a801200035c8d1011c169cd65e81800001000100040007046368617406676f6f676c6503636f6d00001c0001c00c001c00010000012a0010240468004002081a000000000000200ec011000200010001f0f20006036e7334c011c011000200010001f0f20006036e7331c011c011000200010001f0f20006036e7332c011c011000200010001f0f20006036e7333c011c05b000100010001fe660004d8ef200ac06d000100010001f1ce0004d8ef220ac07f0001000100021aad0004d8ef240ac05b001c00010002c4e400102001486048020032000000000000000ac06d001c00010001f1ce00102001486048020034000000000000000ac07f001c000100050db900102001486048020036000000000000000a0000291000000000000000").unwrap();
-        let should_not_fail = Packet::from_bytes(&should_not_fail, ENCAP_TYPE_ETH);
-
-        assert!(should_not_fail.is_ok(), "{:?}", should_not_fail.err());
-    }
-
-    #[cfg_attr(feature = "wasm", wasm_bindgen_test)]
-    #[test]
-    fn parse_failing_packet_2() {
-        use crate::layers;
-        let _ = layers::register_defaults();
-        let should_not_fail = hex::decode("387a0ec884c6001a9adead05080045000163902e00003d11b84c7448fdfec0a8012000359cca014f1eabbbd3818000010001000400090373736c076773746174696303636f6d00001c0001c00c001c0001000000fc001024046800400908130000000000002003c0100002000100016de4000d036e733406676f6f676c65c018c0100002000100016de40006036e7331c04dc0100002000100016de40006036e7332c04dc0100002000100016de40006036e7333c04dc0620001000100016df50004d8ef200ac0740001000100016df50004d8ef220ac0860001000100016df50004d8ef240ac0490001000100016df50004d8ef260ac062001c000100016df500102001486048020032000000000000000ac074001c000100016df500102001486048020034000000000000000ac086001c000100016df500102001486048020036000000000000000ac049001c000100016df500102001486048020038000000000000000a0000291000000000000000").unwrap();
-        let should_not_fail = Packet::from_bytes(&should_not_fail, ENCAP_TYPE_ETH);
-
-        assert!(should_not_fail.is_ok(), "{:?}", should_not_fail.err());
-    }
-
-    #[cfg_attr(feature = "wasm", wasm_bindgen_test)]
-    #[test]
-    fn parse_failing_packet_3() {
-        use crate::layers;
-        let _ = layers::register_defaults();
-        let should_not_fail = hex::decode("00000304000600000000000000000800450000c01b0b400001115fec7f0000357f0000010035dd3600acfef3c8218180000100020004000108697076346f6e6c7904617270610000010001c00c00010001000017210004c00000aac00c00010001000017210004c00000abc00c0002000100001721001401620c69616e612d73657276657273036e657400c00c000200010000172100040161c04dc00c000200010000172100040163c04dc00c0002000100001721000e026e73056963616e6e036f726700000029ffd6000000000000").unwrap();
-        let should_not_fail = Packet::from_bytes(&should_not_fail, ENCAP_TYPE_LINUX_SLL);
-
-        assert!(should_not_fail.is_ok(), "{:?}", should_not_fail.err());
     }
 }

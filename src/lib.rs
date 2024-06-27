@@ -46,9 +46,8 @@ compile_error!(
 #[cfg(all(target_family = "wasm", not(feature = "wasm")))]
 compile_error!("feature \"wasm\" is required for \"wasm32\" targets.");
 
-/* #[cfg(all(not(target_family = "wasm"), feature = "wasm"))]
+#[cfg(all(not(target_family = "wasm"), feature = "wasm"))]
 compile_error!("feature \"wasm\" is only supported for \"wasm32\" targets.");
-*/
 
 #[cfg(all(target_family = "wasm", feature = "python-bindings"))]
 compile_error!("feature \"python-bindings\" is not supported for \"wasm32\" targets.");
