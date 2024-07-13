@@ -14,34 +14,55 @@ use crate::{Layer, Packet, ENCAP_TYPE_ETH};
 
 pub const ETH_HEADER_LENGTH: usize = 14_usize;
 
+/// A Map maintaining EtherType -> Creator fns for Layer Creators of L3 Layers.
+///
+/// The creator function simply creates a `default` L3 struct that implements the dissector
+/// for the Layer.
 pub fn get_ethertypes_map() -> &'static RwLock<HashMap<EtherType, LayerCreatorFn>> {
-    /// A Map maintaining EtherType -> Creator fns for Layer Creators of L3 Layers.
-    ///
-    /// The creator function simply creates a `default` L3 struct that implements the dissector
-    /// for the Layer.
-    pub(crate) static ETHERTYPES_MAP: OnceLock<RwLock<HashMap<EtherType, LayerCreatorFn>>> =
-        OnceLock::new();
+    static ETHERTYPES_MAP: OnceLock<RwLock<HashMap<EtherType, LayerCreatorFn>>> = OnceLock::new();
     ETHERTYPES_MAP.get_or_init(|| RwLock::new(HashMap::new()))
+}
+
+/// A Map maintaining String -> EtherType of L3 Layers.
+pub fn get_inv_ethertypes_map() -> &'static RwLock<HashMap<String, EtherType>> {
+    static INV_ETHERTYPES_MAP: OnceLock<RwLock<HashMap<String, EtherType>>> = OnceLock::new();
+    INV_ETHERTYPES_MAP.get_or_init(|| RwLock::new(HashMap::new()))
 }
 
 // Register our Encap Types with the Packet.
 pub(crate) fn register_defaults() -> Result<(), Error> {
-    get_ethertypes_map();
-
     Packet::register_encap_type(ENCAP_TYPE_ETH, Ethernet::creator)
 }
 
 /// Register for a given EtherType
 ///
 /// A Layer that would handle subsequent decoding for a given Ethertype, should register itself
-/// by calling this function. For example [`crate::layers::ipv4`] would call `register_ethertype`
-/// with [`EtherType`] value of 0x0800, passing the creator function for that layer.
-pub fn register_ethertype(eth_type: EtherType, layer: LayerCreatorFn) -> Result<(), Error> {
-    let mut map = get_ethertypes_map().write().unwrap();
-    if map.contains_key(&eth_type) {
-        return Err(Error::RegisterError(format!("ether_type: {}", eth_type)));
+/// by calling this function. An optional name value can be provided to be used during packet creation.
+/// For example [`crate::layers::ipv4`] would call `register_ethertype` with [`EtherType`] 
+/// value of 0x0800, and a name value of "IPv4" passing the creator function for that layer.
+pub fn register_ethertype(
+    eth_type: EtherType,
+    name: Option<&str>,
+    layer: LayerCreatorFn,
+) -> Result<(), Error> {
+    {
+        let mut map = get_ethertypes_map().write().unwrap();
+        if map.contains_key(&eth_type) {
+            return Err(Error::RegisterError(format!("ether_type: {}", eth_type)));
+        }
+        map.insert(eth_type, layer);
     }
-    map.insert(eth_type, layer);
+
+    if let Some(name) = name {
+        let mut inv_map = get_inv_ethertypes_map().write().unwrap();
+        if inv_map.contains_key(name) {
+            return Err(Error::RegisterError(format!(
+                "Cannot find EtherType for : {}",
+                name
+            )));
+        }
+        inv_map.insert(name.to_string(), eth_type);
+    }
 
     Ok(())
 }
@@ -103,16 +124,15 @@ impl Layer for Ethernet {
         result.extend(self.dst_mac.as_slice());
         result.extend(self.src_mac.as_slice());
 
-        let ethertype: u16 = match info {
-            "ARP" => crate::types::ETHERTYPE_ARP,
-            "IPv4" => crate::types::ETHERTYPE_IP,
-            "IPv6" => crate::types::ETHERTYPE_IP6,
-            // FIXME: can also be `ETHERTYPE_MPLS_MULTICAST`
-            "MPLS" => crate::types::ETHERTYPE_MPLS_UNICAST,
-            "raw" => 0xffff,
-            // NOTE: should return Err instead
-            _ => unimplemented!(),
-        };
+        let ethertype = get_inv_ethertypes_map()
+            .read()
+            .unwrap()
+            .get(info)
+            .copied()
+            .unwrap_or_else(|| match info {
+                "raw" => crate::types::ETHERTYPE_RAW,
+                _ => todo!("Return Err here instead"),
+            });
 
         result.extend(ethertype.to_be_bytes());
         result.extend(next_layer.unwrap_or_default());

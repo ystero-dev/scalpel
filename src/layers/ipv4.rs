@@ -32,11 +32,8 @@ fn get_protocol_map() -> &'static RwLock<HashMap<u8, LayerCreatorFn>> {
 // Right now only Ethernet is Supported
 pub(crate) fn register_defaults() -> Result<(), Error> {
     use crate::layers::ethernet::register_ethertype;
-
-    get_protocol_map();
-
-    register_ethertype(crate::types::ETHERTYPE_IP, IPv4::creator)?;
-
+    let name = Some(IPv4::default().name());
+    register_ethertype(crate::types::ETHERTYPE_IP, name, IPv4::creator)?;
     Ok(())
 }
 
@@ -263,8 +260,8 @@ impl IPv4 {
         // 16 bit one's complement of one's complement sum of all 16 bit words
         let len = bytes.len();
         let mut csum = 0_u32;
-        for i in 0..len/2 {
-            let word = u16::from_be_bytes(bytes[2*i..2*(i+1)].try_into().unwrap());
+        for i in 0..len / 2 {
+            let word = u16::from_be_bytes(bytes[2 * i..2 * (i + 1)].try_into().unwrap());
             csum += word as u32;
         }
         csum = ((csum >> 16) + (csum & 0xffff)) as u32;
@@ -373,7 +370,7 @@ impl Layer for IPv4 {
 
         let checksum = IPv4::calculate_checksum(&result);
         result[checksum_start..checksum_start + 2].copy_from_slice(&checksum.to_be_bytes());
-        
+
         result.extend(next_layer.unwrap_or_default());
 
         Ok(result)
