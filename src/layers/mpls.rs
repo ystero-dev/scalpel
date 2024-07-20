@@ -16,8 +16,10 @@ pub const MPLS_HEADER_LENGTH: usize = 4_usize;
 
 // Register Ourselves to the Ethernet layer, as this is a 2.5 layer protocol
 pub(crate) fn register_defaults() -> Result<(), Error> {
-    ethernet::register_ethertype(ETHERTYPE_MPLS_UNICAST, MPLS::creator)?;
-    ethernet::register_ethertype(ETHERTYPE_MPLS_MULTICAST, MPLS::creator)
+    let name = Some(MPLS::default().name());
+    ethernet::register_ethertype(ETHERTYPE_MPLS_UNICAST, name, MPLS::creator)?;
+    ethernet::register_ethertype(ETHERTYPE_MPLS_MULTICAST, None, MPLS::creator)?;
+    Ok(())
 }
 
 #[derive(Debug, Default, Serialize, Copy, Clone)]

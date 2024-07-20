@@ -3,7 +3,7 @@
 use core::convert::TryInto;
 
 use std::collections::HashMap;
-use std::sync::{RwLock,OnceLock};
+use std::sync::{OnceLock, RwLock};
 
 use serde::Serialize;
 
@@ -13,7 +13,6 @@ use crate::Layer;
 
 /// Basic Length of the IPv6 Header
 pub const IPV6_BASE_HEADER_LENGTH: usize = 40_usize;
-
 
 fn get_next_headers_map() -> &'static RwLock<HashMap<u8, LayerCreatorFn>> {
     static NEXT_HEADERS_MAP: OnceLock<RwLock<HashMap<u8, LayerCreatorFn>>> = OnceLock::new();
@@ -26,8 +25,8 @@ fn get_next_headers_map() -> &'static RwLock<HashMap<u8, LayerCreatorFn>> {
 pub(crate) fn register_defaults() -> Result<(), Error> {
     use crate::layers::ethernet::register_ethertype;
 
-    get_next_headers_map();
-    register_ethertype(crate::types::ETHERTYPE_IP6, IPv6::creator)?;
+    let name = Some(IPv6::default().name());
+    register_ethertype(crate::types::ETHERTYPE_IP6, name, IPv6::creator)?;
 
     Ok(())
 }

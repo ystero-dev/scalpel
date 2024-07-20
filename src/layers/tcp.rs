@@ -2,7 +2,7 @@
 use core::convert::TryInto;
 
 use std::collections::HashMap;
-use std::sync::{RwLock,OnceLock};
+use std::sync::{OnceLock, RwLock};
 
 use serde::Serialize;
 
@@ -11,7 +11,6 @@ use crate::types::LayerCreatorFn;
 use crate::Layer;
 
 use crate::layers::{ipv4, ipv6};
-
 
 fn get_tcp_apps_map() -> &'static RwLock<HashMap<u16, LayerCreatorFn>> {
     static TCP_APPS_MAP: OnceLock<RwLock<HashMap<u16, LayerCreatorFn>>> = OnceLock::new();

@@ -14,7 +14,9 @@ pub const ARP_HEADER_LENGTH: usize = 28_usize;
 
 // Register outselves with Ethernet layer
 pub(crate) fn register_defaults() -> Result<(), Error> {
-    ethernet::register_ethertype(ETHERTYPE_ARP, ARP::creator)
+    let name = Some(ARP::default().name());
+    ethernet::register_ethertype(ETHERTYPE_ARP, name, ARP::creator)?;
+    Ok(())
 }
 
 /// Structure representing a dissected ARP protocol payload.

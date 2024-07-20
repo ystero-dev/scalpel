@@ -32,11 +32,8 @@ fn get_protocol_map() -> &'static RwLock<HashMap<u8, LayerCreatorFn>> {
 // Right now only Ethernet is Supported
 pub(crate) fn register_defaults() -> Result<(), Error> {
     use crate::layers::ethernet::register_ethertype;
-
-    get_protocol_map();
-
-    register_ethertype(crate::types::ETHERTYPE_IP, IPv4::creator)?;
-
+    let name = Some(IPv4::default().name());
+    register_ethertype(crate::types::ETHERTYPE_IP, name, IPv4::creator)?;
     Ok(())
 }
 
@@ -85,7 +82,10 @@ pub enum IPOption {
 pub struct IPv4 {
     version: u8,
     hdr_len: u8,
-    tos: u8,
+    #[serde(serialize_with = "crate::types::hex::serialize_lower_hex_u8")]
+    dscp: u8,
+    #[serde(serialize_with = "crate::types::hex::serialize_lower_hex_u8")]
+    ecn: u8,
     len: u16,
     #[serde(serialize_with = "crate::types::hex::serialize_lower_hex_u16")]
     id: u16,
@@ -256,8 +256,16 @@ impl IPv4 {
     }
 
     #[cfg(feature = "sculpting")]
-    fn calculate_checksum(_bytes: &[u8]) -> u16 {
-        0
+    fn calculate_checksum(bytes: &[u8]) -> u16 {
+        // 16 bit one's complement of one's complement sum of all 16 bit words
+        let len = bytes.len();
+        let mut csum = 0_u32;
+        for i in 0..len / 2 {
+            let word = u16::from_be_bytes(bytes[2 * i..2 * (i + 1)].try_into().unwrap());
+            csum += word as u32;
+        }
+        csum = ((csum >> 16) + (csum & 0xffff)) as u32;
+        (!csum & 0xffff) as u16
     }
 }
 
@@ -279,7 +287,8 @@ impl Layer for IPv4 {
                 data: hex::encode(bytes),
             });
         }
-        self.tos = bytes[1];
+        self.dscp = bytes[1] >> 2;
+        self.ecn = bytes[1] & 0b11;
         self.len = u16::from_be_bytes(bytes[2..4].try_into().unwrap());
         self.id = u16::from_be_bytes(bytes[4..6].try_into().unwrap());
         let flags_offset = u16::from_be_bytes(bytes[6..8].try_into().unwrap());
@@ -337,9 +346,11 @@ impl Layer for IPv4 {
 
         let mut result = Vec::with_capacity(self.len as usize);
 
-        let byte = (self.version << 4) | self.hdr_len;
+        let mut byte = (self.version << 4) | self.hdr_len;
         result.push(byte);
-        result.push(self.tos);
+
+        byte = (self.dscp << 2) | self.ecn;
+        result.push(byte);
         result.extend(self.len.to_be_bytes());
         result.extend(self.id.to_be_bytes());
 
@@ -357,10 +368,11 @@ impl Layer for IPv4 {
             todo!();
         }
 
-        result.extend(next_layer.unwrap_or_default());
-
         let checksum = IPv4::calculate_checksum(&result);
         result[checksum_start..checksum_start + 2].copy_from_slice(&checksum.to_be_bytes());
+
+        result.extend(next_layer.unwrap_or_default());
+
         Ok(result)
     }
 }
